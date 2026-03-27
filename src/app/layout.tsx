@@ -17,12 +17,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="min-h-svh bg-zinc-900">
-        <header className="sticky top-0 z-20 w-full border-b border-white/15 bg-zinc-800/95 px-5 py-3 shadow-sm shadow-black/40 backdrop-blur sm:px-6">
+      <body className="min-h-svh bg-white">
+        <header className="sticky top-0 z-20 w-full border-b border-zinc-200 bg-white/95 px-5 py-3 shadow-sm shadow-zinc-200/80 backdrop-blur sm:px-6">
           <nav className="flex items-center justify-between" aria-label="Primary">
             <Link
               href="/"
-              className="text-sm font-semibold uppercase tracking-[0.16em] text-white"
+              className="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-900"
             >
               Hits Different
             </Link>
@@ -30,26 +30,26 @@ export default function RootLayout({
               <Link
                 href="/"
                 aria-current="page"
-                className="text-white underline decoration-zinc-400 underline-offset-4"
+                className="text-zinc-900 underline decoration-zinc-400 underline-offset-4"
               >
                 Demo
               </Link>
               <a
                 href="#"
-                className="text-white/75 transition hover:text-white"
+                className="text-zinc-600 transition hover:text-zinc-900"
               >
                 Tutorial
               </a>
               <a
                 href="#"
-                className="rounded-md border border-zinc-600 px-2.5 py-1 text-white/90 transition hover:border-zinc-500 hover:bg-zinc-800 hover:text-white"
+                className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-zinc-900 transition hover:border-zinc-400 hover:bg-zinc-50"
               >
                 Sign in
               </a>
             </div>
           </nav>
         </header>
-        <div className="mx-auto flex min-h-[calc(100svh-57px)] w-full max-w-xl flex-col bg-zinc-900">
+        <div className="mx-auto flex min-h-[calc(100svh-57px)] w-full max-w-xl flex-col bg-white">
           {children}
         </div>
       </body>

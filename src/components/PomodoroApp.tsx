@@ -40,15 +40,15 @@ function formatCycleOrdinal(cycle: number): string {
 }
 
 const phaseBadgeStyles: Record<Phase, string> = {
-  idle: 'bg-zinc-800 text-white',
+  idle: 'bg-zinc-200 text-zinc-900',
   focus:
-    'border border-zinc-500/80 bg-zinc-700/60 text-white',
+    'border border-zinc-300 bg-zinc-100 text-zinc-900',
   break:
-    'border border-zinc-600 bg-zinc-800/80 text-white',
+    'border border-zinc-300 bg-white text-zinc-900',
 }
 
 const longBreakBadgeClass =
-  'border border-zinc-500 bg-zinc-700 text-white'
+  'border border-zinc-400 bg-zinc-100 text-zinc-900'
 
 export function PomodoroApp() {
   const [task, setTask] = useState('')
@@ -208,18 +208,18 @@ export function PomodoroApp() {
   }, [phase, remaining, isLongBreak, task, currentCycle])
 
   const panelClass =
-    'rounded-xl border border-zinc-700 bg-zinc-800/80 p-5 shadow-sm'
+    'rounded-xl border border-zinc-200 bg-zinc-50 p-5 shadow-sm'
 
   const btnPrimary =
-    'inline-flex cursor-pointer rounded-lg border-2 border-zinc-400 bg-zinc-700 px-5 py-2.5 text-[15px] font-medium text-white shadow-sm transition hover:border-zinc-300 hover:bg-zinc-600 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300'
+    'inline-flex cursor-pointer rounded-lg border-2 border-zinc-900 bg-zinc-900 px-5 py-2.5 text-[15px] font-medium text-white shadow-sm transition hover:border-zinc-700 hover:bg-zinc-800 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900'
 
   const btnSecondary =
-    'inline-flex cursor-pointer rounded-lg border-2 border-zinc-600 bg-zinc-800 px-5 py-2.5 text-[15px] font-medium text-white transition hover:border-zinc-500 hover:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300'
+    'inline-flex cursor-pointer rounded-lg border-2 border-zinc-300 bg-white px-5 py-2.5 text-[15px] font-medium text-zinc-900 transition hover:border-zinc-400 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-500'
 
   const waveBars = Array.from({ length: 12 }, (_, i) => i)
   const taskInputClass = showLanding
-    ? 'w-full border-0 bg-transparent px-2 py-3 text-center text-2xl font-medium leading-snug tracking-wide text-white outline-none ring-0 transition placeholder:text-white/45 focus:ring-0 sm:text-3xl'
-    : 'w-full rounded-xl border border-zinc-600 bg-zinc-800 px-4 py-3.5 text-center text-[17px] leading-snug text-white shadow-sm outline-none ring-0 transition placeholder:text-white/50 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-500/25 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:opacity-80 sm:py-4 sm:text-lg'
+    ? 'w-full border-0 bg-transparent px-2 py-3 text-center text-2xl font-medium leading-snug tracking-wide text-zinc-900 outline-none ring-0 transition placeholder:text-zinc-400 focus:ring-0 sm:text-3xl'
+    : 'w-full rounded-xl border border-zinc-300 bg-white px-4 py-3.5 text-center text-[17px] leading-snug text-zinc-900 shadow-sm outline-none ring-0 transition placeholder:text-zinc-400 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-400/30 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-80 sm:py-4 sm:text-lg'
 
   return (
     <div className="relative flex flex-1 flex-col justify-center gap-6 px-5 py-8 pb-12 text-left sm:px-6">
@@ -232,19 +232,19 @@ export function PomodoroApp() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="resume-dialog-title"
-            className="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-6 shadow-xl"
+            className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-xl"
           >
             <h2
               id="resume-dialog-title"
-              className="text-lg font-semibold text-white"
+              className="text-lg font-semibold text-zinc-900"
             >
               Last session
             </h2>
-            <p className="mt-2 text-[15px] leading-relaxed text-white/80">
+            <p className="mt-2 text-[15px] leading-relaxed text-zinc-600">
               {resumeOffer.phase === 'focus' ? (
                 <>
                   You have{' '}
-                  <strong className="text-white">
+                  <strong className="text-zinc-900">
                     {formatMmSs(resumeOffer.remaining)}
                   </strong>{' '}
                   left in your focus block. Resume where you left off?
@@ -252,7 +252,7 @@ export function PomodoroApp() {
               ) : (
                 <>
                   You have{' '}
-                  <strong className="text-white">
+                  <strong className="text-zinc-900">
                     {formatMmSs(resumeOffer.remaining)}
                   </strong>{' '}
                   left on your break. Continue?
@@ -260,9 +260,9 @@ export function PomodoroApp() {
               )}
             </p>
             {resumeOffer.task.trim() ? (
-              <p className="mt-2 text-sm text-white/80">
+              <p className="mt-2 text-sm text-zinc-600">
                 Task:{' '}
-                <span className="font-medium text-white">
+                <span className="font-medium text-zinc-900">
                   {resumeOffer.task.trim()}
                 </span>
               </p>
@@ -288,13 +288,13 @@ export function PomodoroApp() {
       )}
 
       <section className="mx-auto w-full max-w-[36rem] px-1 pt-2 text-center" aria-labelledby="task-hero">
-        <p className="mb-6 text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
+        <p className="mb-6 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
           Hits Different
         </p>
         <form onSubmit={onTaskSubmit} className="flex flex-col items-stretch gap-4">
           <h1
             id="task-hero"
-            className="text-balance text-4xl font-semibold uppercase leading-tight tracking-[0.06em] text-white sm:text-5xl"
+            className="text-balance text-4xl font-semibold uppercase leading-tight tracking-[0.06em] text-zinc-900 sm:text-5xl"
           >
             {showLanding
               ? 'DEEP WORK, CHOREOGRAPHED BY YOU.'
@@ -323,7 +323,7 @@ export function PomodoroApp() {
             />
           )}
           {phase === 'idle' && !resumeOffer && (
-            <p className="text-sm leading-relaxed text-white/70">
+            <p className="text-sm leading-relaxed text-zinc-600">
               {showLanding
                 ? 'Type a task to start your session.'
                 : 'Timer and playlist start together when you press Enter.'}
@@ -335,12 +335,12 @@ export function PomodoroApp() {
       {showLanding ? null : (
         <>
           <section className={`${panelClass} text-center`} aria-label="Quota">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
               Quota
             </p>
             <div
               key={`quota-${currentCycle}`}
-              className="quota-swipe-down mt-2 inline-block rounded-lg border border-zinc-500 bg-zinc-700 px-4 py-2 text-base font-semibold text-white"
+              className="quota-swipe-down mt-2 inline-block rounded-lg border border-zinc-300 bg-white px-4 py-2 text-base font-semibold text-zinc-900"
             >
               {cycleLabel}
             </div>
@@ -358,13 +358,13 @@ export function PomodoroApp() {
           {phase === 'break' && (isLongBreak ? 'Long break' : 'Short break')}
         </div>
         {phase !== 'idle' && (
-          <p className="mb-2 text-sm font-medium text-white/80">
+          <p className="mb-2 text-sm font-medium text-zinc-700">
             Cycle {currentCycle} of {FOCUS_CYCLES}
             {phase === 'focus' ? ' · focus' : isLongBreak ? ' · long break' : ' · short break'}
           </p>
         )}
         <div
-          className="mb-2 font-mono text-5xl font-medium tabular-nums tracking-tight text-white sm:text-6xl"
+          className="mb-2 font-mono text-5xl font-medium tabular-nums tracking-tight text-zinc-900 sm:text-6xl"
           role="timer"
           aria-atomic="true"
         >
@@ -373,28 +373,28 @@ export function PomodoroApp() {
 
         {phase !== 'idle' && blockTotal > 0 && (
           <div className="mb-4 text-left">
-            <div className="mb-1 flex justify-between text-xs font-medium text-white/75">
+            <div className="mb-1 flex justify-between text-xs font-medium text-zinc-600">
               <span>Block slice</span>
               <span>
                 {formatMmSs(blockTotal - remaining)} / {formatMmSs(blockTotal)}
               </span>
             </div>
             <div
-              className="h-2 overflow-hidden rounded-full bg-zinc-700"
+              className="h-2 overflow-hidden rounded-full bg-zinc-200"
               role="progressbar"
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round(sliceProgress * 100)}
             >
               <div
-                className="h-full rounded-full bg-white transition-[width] duration-1000 ease-linear"
+                className="h-full rounded-full bg-zinc-900 transition-[width] duration-1000 ease-linear"
                 style={{ width: `${sliceProgress * 100}%` }}
               />
             </div>
           </div>
         )}
 
-        <p className="mb-6 text-[15px] leading-relaxed text-white/80">
+        <p className="mb-6 text-[15px] leading-relaxed text-zinc-600">
           {phase === 'idle' &&
             `${FOCUS_CYCLES} focus blocks (${FOCUS_SECONDS / 60} min each). After blocks 1–3: ${BREAK_SECONDS / 60} min breaks. After block ${FOCUS_CYCLES}: a ${LONG_BREAK_SECONDS / 60} min long break — then name a new task for the next round.`}
           {phase === 'focus' && 'Stay on task until the timer ends or skip.'}
@@ -424,15 +424,15 @@ export function PomodoroApp() {
 
           {playlist && (
             <section className={panelClass} aria-label="Playlist player">
-          <h2 className="mb-4 text-lg font-semibold tracking-tight text-white">
+          <h2 className="mb-4 text-lg font-semibold tracking-tight text-zinc-900">
             {playlist.title}
           </h2>
-          <p className="mb-4 text-sm leading-relaxed text-white/80">
+          <p className="mb-4 text-sm leading-relaxed text-zinc-600">
             Playback starts automatically; it may begin muted — use the player
             controls to unmute if needed.
           </p>
-          <div className="mb-4 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-3">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
+          <div className="mb-4 rounded-lg border border-zinc-200 bg-white px-3 py-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
               Sound wave
             </p>
             <div
