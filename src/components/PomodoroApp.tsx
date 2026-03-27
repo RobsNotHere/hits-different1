@@ -198,8 +198,10 @@ export function PomodoroApp() {
       return
     }
     const label = phase === 'focus' ? 'Focus' : isLongBreak ? 'Long break' : 'Break'
-    document.title = `⏱ ${formatMmSs(remaining)} • ${label}`
-  }, [phase, remaining, isLongBreak])
+    const phaseIcon = phase === 'focus' ? '🧑‍💻' : '🧘'
+    const taskLabel = task.trim() ? task.trim() : 'Untitled task'
+    document.title = `${phaseIcon} ${taskLabel} • ${formatMmSs(remaining)} • ${formatCycleOrdinal(currentCycle)} cycle • ${label}`
+  }, [phase, remaining, isLongBreak, task, currentCycle])
 
   const panelClass =
     'rounded-xl border border-sky-200/90 bg-amber-50/80 p-5 shadow-sm dark:border-sky-900/50 dark:bg-sky-950/40 dark:shadow-none'
