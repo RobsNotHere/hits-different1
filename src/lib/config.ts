@@ -5,19 +5,15 @@ export const FOCUS_SECONDS = 25 * 60
 export const BREAK_SECONDS = 5 * 60
 
 export const DEMO_FOCUS_TITLE = 'Focus stream'
-export const DEMO_BREAK_TITLE = 'Break playlist'
+export const DEMO_BREAK_TITLE = 'Break'
 
 /** Lofi study stream (demo focus). */
 export const DEMO_FOCUS_EMBED =
   'https://www.youtube-nocookie.com/embed/jfKfPfyJRdk?rel=0'
 
-/**
- * Break: YouTube mix playlist (`RD` + video id) — plays a rotating queue of
- * related tracks after the seed video. Replace `list=RD…` with your own
- * `videoseries?list=PL…` playlist URL from YouTube if you prefer a fixed list.
- */
+/** Break: single YouTube video (https://www.youtube.com/watch?v=4xDzrJKXOOY). */
 export const DEMO_BREAK_EMBED =
-  'https://www.youtube-nocookie.com/embed/videoseries?list=RD5qap5aO4i9A'
+  'https://www.youtube-nocookie.com/embed/4xDzrJKXOOY?rel=0'
 
 export function blockSecondsForPhase(phase: Phase): number {
   if (phase === 'focus') return FOCUS_SECONDS
