@@ -7,8 +7,93 @@
 
 @layer base {
   body {
-    @apply m-0 min-h-svh bg-white font-sans text-[17px] leading-relaxed tracking-wide text-zinc-900 antialiased;
+    @apply m-0 min-h-svh font-sans text-[17px] leading-relaxed tracking-wide text-zinc-900 antialiased;
   }
+}
+
+/* Soft illustrative canvas: layered gradients + floating color washes */
+.app-canvas {
+  position: relative;
+  min-height: 100svh;
+  background: linear-gradient(
+    165deg,
+    #faf8ff 0%,
+    #f8fafc 28%,
+    #fff7ed 55%,
+    #f0fdf4 82%,
+    #faf5ff 100%
+  );
+}
+
+.app-canvas::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(
+      ellipse 90% 55% at 15% -5%,
+      rgba(196, 181, 253, 0.45),
+      transparent 52%
+    ),
+    radial-gradient(
+      ellipse 70% 45% at 95% 5%,
+      rgba(251, 207, 232, 0.4),
+      transparent 48%
+    ),
+    radial-gradient(
+      ellipse 55% 35% at 50% 105%,
+      rgba(167, 243, 208, 0.35),
+      transparent 50%
+    ),
+    radial-gradient(
+      circle 280px at 80% 60%,
+      rgba(254, 243, 199, 0.5),
+      transparent 70%
+    );
+}
+
+.app-canvas__content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Cards: paper-like with soft tinted shadow */
+.illustrative-panel {
+  @apply rounded-2xl border border-white/70 p-5 shadow-lg shadow-violet-200/40 ring-1 ring-violet-100/60 backdrop-blur-sm;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(250, 245, 255, 0.85) 50%,
+    rgba(255, 251, 235, 0.9) 100%
+  );
+}
+
+/* Hero accent underline (illustrative flourish) */
+.hero-flourish {
+  position: relative;
+  display: inline-block;
+}
+
+.hero-flourish::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -0.35rem;
+  width: min(100%, 12rem);
+  height: 0.45rem;
+  transform: translateX(-50%);
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(167, 139, 250, 0.55),
+    rgba(251, 191, 36, 0.5),
+    rgba(52, 211, 153, 0.45),
+    transparent
+  );
+  opacity: 0.85;
 }
 
 @keyframes quota-swipe-down {
