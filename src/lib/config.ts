@@ -11,9 +11,9 @@ export const DEMO_BREAK_TITLE = 'Break'
 export const DEMO_FOCUS_EMBED =
   'https://www.youtube-nocookie.com/embed/jfKfPfyJRdk?rel=0'
 
-/** Break: single YouTube video (https://www.youtube.com/watch?v=4xDzrJKXOOY). */
+/** Break: single YouTube video (https://www.youtube.com/watch?v=28KRPhVzCus). */
 export const DEMO_BREAK_EMBED =
-  'https://www.youtube-nocookie.com/embed/4xDzrJKXOOY?rel=0'
+  'https://www.youtube-nocookie.com/embed/28KRPhVzCus?rel=0'
 
 export function blockSecondsForPhase(phase: Phase): number {
   if (phase === 'focus') return FOCUS_SECONDS
