@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-svh bg-zinc-900">
-        <header className="sticky top-0 z-20 w-full border-b border-zinc-700/80 bg-zinc-900/95 px-5 py-3 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-20 w-full border-b border-white/15 bg-zinc-800/95 px-5 py-3 shadow-sm shadow-black/40 backdrop-blur sm:px-6">
           <nav className="flex items-center justify-between" aria-label="Primary">
             <Link
               href="/"
