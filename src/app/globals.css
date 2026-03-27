@@ -7,7 +7,7 @@
 
 @layer base {
   body {
-    @apply m-0 min-h-svh bg-amber-50 font-sans text-[17px] leading-relaxed tracking-wide text-sky-800 antialiased dark:bg-sky-950 dark:text-sky-200;
+    @apply m-0 min-h-svh bg-zinc-900 font-sans text-[17px] leading-relaxed tracking-wide text-white antialiased;
   }
 }
 
