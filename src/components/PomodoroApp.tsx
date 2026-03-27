@@ -217,9 +217,12 @@ export function PomodoroApp() {
     'inline-flex cursor-pointer rounded-lg border-2 border-zinc-600 bg-zinc-800 px-5 py-2.5 text-[15px] font-medium text-white transition hover:border-zinc-500 hover:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300'
 
   const waveBars = Array.from({ length: 12 }, (_, i) => i)
+  const taskInputClass = showLanding
+    ? 'w-full border-0 bg-transparent px-2 py-3 text-center text-2xl font-medium leading-snug tracking-wide text-white outline-none ring-0 transition placeholder:text-white/45 focus:ring-0 sm:text-3xl'
+    : 'w-full rounded-xl border border-zinc-600 bg-zinc-800 px-4 py-3.5 text-center text-[17px] leading-snug text-white shadow-sm outline-none ring-0 transition placeholder:text-white/50 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-500/25 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:opacity-80 sm:py-4 sm:text-lg'
 
   return (
-    <div className="relative flex flex-1 flex-col gap-6 px-5 py-8 pb-12 text-left sm:px-6">
+    <div className="relative flex flex-1 flex-col justify-center gap-6 px-5 py-8 pb-12 text-left sm:px-6">
       {resumeOffer && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-[2px]"
@@ -291,13 +294,13 @@ export function PomodoroApp() {
         <form onSubmit={onTaskSubmit} className="flex flex-col items-stretch gap-4">
           <h1
             id="task-hero"
-            className="text-balance text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl"
+            className="text-balance text-4xl font-semibold uppercase leading-tight tracking-[0.06em] text-white sm:text-5xl"
           >
             {showLanding
-              ? 'Deep work, choreographed by you.'
+              ? 'DEEP WORK, CHOREOGRAPHED BY YOU.'
               : phase === 'idle'
-                ? 'Current task'
-                : task.trim() || 'Current task'}
+                ? 'CURRENT TASK'
+                : (task.trim() || 'CURRENT TASK').toUpperCase()}
           </h1>
           {(phase === 'idle' || resumeOffer !== null) && (
             <input
@@ -305,8 +308,12 @@ export function PomodoroApp() {
               name="task"
               type="text"
               aria-labelledby="task-hero"
-              className="w-full rounded-xl border border-zinc-600 bg-zinc-800 px-4 py-3.5 text-center text-[17px] leading-snug text-white shadow-sm outline-none ring-0 transition placeholder:text-white/50 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-500/25 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:opacity-80 sm:py-4 sm:text-lg"
-              placeholder="Name it, then press Enter…"
+              className={taskInputClass}
+              placeholder={
+                showLanding
+                  ? 'WHAT ARE YOU WORKING ON?'
+                  : 'Name it, then press Enter…'
+              }
               value={task}
               onChange={(e) => setTask(e.target.value)}
               disabled={phase !== 'idle' || resumeOffer !== null}

@@ -17,7 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-svh">
-        <div className="mx-auto flex min-h-svh w-full max-w-xl flex-col border-x border-zinc-700/90 bg-zinc-900">
+        <div className="mx-auto flex min-h-svh w-full max-w-xl flex-col bg-zinc-900">
           {children}
         </div>
       </body>
