@@ -52,11 +52,10 @@ const FOCUS_MINUTES = FOCUS_SECONDS / 60
 const BREAK_MINUTES = BREAK_SECONDS / 60
 const LONG_BREAK_MINUTES = LONG_BREAK_SECONDS / 60
 
-const phaseBadgeStyles: Record<Phase, string> = {
+const phaseBadgeStyles = {
   idle: 'bg-zinc-200 text-zinc-800',
-  focus: 'bg-zinc-300 text-zinc-900',
   break: 'bg-zinc-200 text-zinc-800',
-}
+} as const
 
 const longBreakBadgeClass = 'bg-zinc-300 text-zinc-900'
 
@@ -560,24 +559,26 @@ export function PomodoroApp() {
                 >
                   {cycleLabel}
                 </div>
-                <div
-                  className={`mb-4 inline-block px-2 py-1 text-xs font-semibold uppercase tracking-wider ${
-                    isLongBreak ? longBreakBadgeClass : phaseBadgeStyles[phase]
-                  }`}
-                >
-                  {phase === 'idle' && 'Ready'}
-                  {phase === 'focus' && 'Focus'}
-                  {phase === 'break' &&
-                    (isLongBreak ? 'Long break' : 'Short break')}
-                </div>
+                {phase !== 'focus' && (
+                  <div
+                    className={`mb-4 inline-block px-2 py-1 text-xs font-semibold uppercase tracking-wider ${
+                      phase === 'idle'
+                        ? phaseBadgeStyles.idle
+                        : isLongBreak
+                          ? longBreakBadgeClass
+                          : phaseBadgeStyles.break
+                    }`}
+                  >
+                    {phase === 'idle' && 'Ready'}
+                    {phase === 'break' &&
+                      (isLongBreak ? 'Long break' : 'Short break')}
+                  </div>
+                )}
                 {phase !== 'idle' && (
                   <p className="mb-2 text-sm text-zinc-500">
                     Cycle {currentCycle} of {FOCUS_CYCLES}
-                    {phase === 'focus'
-                      ? ' · focus'
-                      : isLongBreak
-                        ? ' · long break'
-                        : ' · short break'}
+                    {phase === 'break' &&
+                      (isLongBreak ? ' · long break' : ' · short break')}
                   </p>
                 )}
                 <div
