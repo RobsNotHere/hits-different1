@@ -17,42 +17,28 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="app-canvas">
-        <div className="app-canvas__content flex min-h-svh flex-col">
-          <header className="sticky top-0 z-20 w-full border-b border-violet-200/60 bg-white/75 px-5 py-3 shadow-md shadow-violet-200/30 backdrop-blur-md sm:px-6">
-            <nav className="flex items-center justify-between" aria-label="Primary">
-              <Link
-                href="/"
-                className="bg-gradient-to-r from-violet-700 via-fuchsia-600 to-amber-600 bg-clip-text text-sm font-semibold uppercase tracking-[0.16em] text-transparent"
-              >
-                Hits Different
-              </Link>
-              <div className="flex items-center gap-4 text-sm">
-                <Link
-                  href="/"
-                  aria-current="page"
-                  className="font-medium text-violet-900 underline decoration-violet-400 decoration-2 underline-offset-4"
-                >
-                  Demo
-                </Link>
-                <a
-                  href="#"
-                  className="font-medium text-zinc-600 transition hover:text-violet-800"
-                >
-                  Tutorial
-                </a>
-                <a
-                  href="#"
-                  className="rounded-full border border-violet-300/80 bg-gradient-to-b from-white to-violet-50 px-3 py-1.5 font-medium text-violet-900 shadow-sm shadow-violet-200/50 transition hover:border-violet-400 hover:shadow-md"
-                >
-                  Sign in
-                </a>
-              </div>
-            </nav>
-          </header>
-          <div className="mx-auto flex min-h-[calc(100svh-57px)] w-full max-w-xl flex-col">
-            {children}
-          </div>
+      <body className="min-h-svh bg-white text-zinc-900 antialiased">
+        <header className="sticky top-0 z-20 w-full border-0 bg-white px-6 py-5 sm:px-10">
+          <nav className="mx-auto flex max-w-6xl items-center justify-between" aria-label="Primary">
+            <Link
+              href="/"
+              className="text-sm font-normal tracking-wide text-black"
+            >
+              Hits Different
+            </Link>
+            <Link
+              href="/#session"
+              className="text-sm font-normal tracking-wide text-black hover:opacity-70"
+            >
+              Get Started
+            </Link>
+          </nav>
+        </header>
+        <div
+          id="session"
+          className="relative z-[1] mx-auto flex min-h-[calc(100svh-4.5rem)] w-full max-w-6xl flex-1 flex-col"
+        >
+          {children}
         </div>
       </body>
     </html>

@@ -24,6 +24,8 @@ import {
 } from '@/lib/persistedSession'
 import type { Phase } from '@/lib/types'
 
+type AboutTab = 'hitsDifferent' | 'pomodoro' | 'customization'
+
 function formatMmSs(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60)
   const s = totalSeconds % 60
@@ -39,19 +41,21 @@ function formatCycleOrdinal(cycle: number): string {
   return `${cycle}th`
 }
 
+const HITS_DIFFERENT_COPY = [
+  'Hits Different introduces a gimmick for distracted adults by combining event features and focus block with your Spotify playlist. Inspired by the success of short-form videos, Hits Different derives your media addiction into a productive task.',
+  'The concept is a productivity tool that connects to Spotify or YouTube, takes an existing playlist, and turns it into a roughly 25-minute Pomodoro-style focus block. After the focus block ends, the product would automatically switch the user to a designated break playlist. This gives the project a clear product concept with a behavior loop, user value, and room for future feature expansion.',
+]
+
 const phaseBadgeStyles: Record<Phase, string> = {
-  idle:
-    'border border-violet-200/80 bg-gradient-to-r from-violet-100/90 to-fuchsia-100/80 text-violet-950 shadow-sm shadow-violet-200/40',
-  focus:
-    'border border-indigo-200/90 bg-gradient-to-r from-indigo-100 to-violet-100 text-indigo-950 shadow-sm shadow-indigo-200/50',
-  break:
-    'border border-amber-200/90 bg-gradient-to-r from-amber-50 to-orange-100 text-amber-950 shadow-sm shadow-amber-200/40',
+  idle: 'bg-zinc-200 text-zinc-800',
+  focus: 'bg-zinc-300 text-zinc-900',
+  break: 'bg-zinc-200 text-zinc-800',
 }
 
-const longBreakBadgeClass =
-  'border border-emerald-200/90 bg-gradient-to-r from-emerald-50 to-teal-100 text-emerald-950 shadow-sm shadow-emerald-200/40'
+const longBreakBadgeClass = 'bg-zinc-300 text-zinc-900'
 
 export function PomodoroApp() {
+  const [aboutTab, setAboutTab] = useState<AboutTab>('hitsDifferent')
   const [task, setTask] = useState('')
   const [phase, setPhase] = useState<Phase>('idle')
   const [focusIndex, setFocusIndex] = useState(0)
@@ -208,43 +212,152 @@ export function PomodoroApp() {
     document.title = `${phaseIcon} ${taskLabel} • ${formatMmSs(remaining)} • ${formatCycleOrdinal(currentCycle)} cycle • ${label}`
   }, [phase, remaining, isLongBreak, task, currentCycle])
 
-  const panelClass = 'illustrative-panel'
-
   const btnPrimary =
-    'inline-flex cursor-pointer rounded-xl border border-violet-700/30 bg-gradient-to-b from-violet-700 to-violet-900 px-5 py-2.5 text-[15px] font-medium text-white shadow-md shadow-violet-400/35 transition hover:from-violet-600 hover:to-violet-800 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600'
+    'inline-flex cursor-pointer border border-black bg-black px-5 py-2.5 text-sm font-normal text-white transition hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black'
 
   const btnSecondary =
-    'inline-flex cursor-pointer rounded-xl border-2 border-violet-200 bg-white/90 px-5 py-2.5 text-[15px] font-medium text-violet-950 shadow-sm shadow-violet-100 transition hover:border-violet-300 hover:bg-violet-50/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400'
+    'inline-flex cursor-pointer border border-zinc-400 bg-white px-5 py-2.5 text-sm font-normal text-black transition hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-500'
 
-  const waveBars = Array.from({ length: 12 }, (_, i) => i)
+  const aboutNavPill =
+    'rounded-full border border-black px-4 py-2 text-[11px] font-medium uppercase tracking-[0.12em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black'
+  const aboutNavPillActive = 'bg-black text-white'
+  const aboutNavPillIdle =
+    'bg-transparent text-black hover:bg-black/[0.04] active:bg-black/[0.08]'
+
+  const gradientMode: 'idle' | 'focus' | 'break' | 'long-break' =
+    phase === 'focus'
+      ? 'focus'
+      : phase === 'break'
+        ? isLongBreak
+          ? 'long-break'
+          : 'break'
+        : 'idle'
+
+  const WhatIsAside = () => (
+    <aside className="lg:pt-2">
+      <h2 className="mb-6 text-base font-normal text-zinc-500">
+        What is Hits Different
+      </h2>
+      <div className="space-y-4 text-sm leading-relaxed text-zinc-400">
+        {HITS_DIFFERENT_COPY.map((p) => (
+          <p key={p.slice(0, 32)}>{p}</p>
+        ))}
+      </div>
+    </aside>
+  )
+
+  /** Right column: driven by About nav tabs; flows with page scroll. */
+  const AboutRightAside = () => (
+    <aside className="lg:pt-2">
+      {aboutTab === 'hitsDifferent' && (
+        <div
+          id="about-panel-hits-different"
+          role="tabpanel"
+          aria-labelledby="about-tab-hits-different"
+        >
+          <h2 className="mb-6 text-base font-normal text-zinc-500">
+            Hits Different
+          </h2>
+          <div className="space-y-4 text-sm leading-relaxed text-zinc-600">
+            {HITS_DIFFERENT_COPY.map((p) => (
+              <p key={p.slice(0, 32)}>{p}</p>
+            ))}
+          </div>
+        </div>
+      )}
+      {aboutTab === 'pomodoro' && (
+        <div
+          id="about-panel-pomodoro"
+          role="tabpanel"
+          aria-labelledby="about-tab-pomodoro"
+        >
+          <h2 className="mb-6 text-base font-normal text-zinc-500">
+            Pomodoro technique
+          </h2>
+          <p className="text-sm leading-relaxed text-zinc-600">
+            Timed work blocks with short breaks—stay sharp without burning out.
+            Hits Different chains several focus rounds with playlist-backed
+            breaks so momentum stays human.
+          </p>
+        </div>
+      )}
+      {aboutTab === 'customization' && (
+        <div
+          id="about-panel-customization"
+          role="tabpanel"
+          aria-labelledby="about-tab-customization"
+        >
+          <h2 className="mb-6 text-base font-normal text-zinc-500">
+            Customization
+          </h2>
+          <p className="text-sm leading-relaxed text-zinc-600">
+            Tune focus length, short and long breaks, and how many rounds make
+            a cycle in{' '}
+            <code className="rounded border border-zinc-300 bg-white/80 px-1 py-0.5 font-mono text-[13px] text-black">
+              src/lib/config.ts
+            </code>
+            — then rebuild. Demo playlists live there too.
+          </p>
+        </div>
+      )}
+    </aside>
+  )
+
   const taskInputClass = showLanding
-    ? 'w-full border-0 bg-transparent px-2 py-3 text-center text-2xl font-medium leading-snug tracking-wide text-zinc-900 outline-none ring-0 transition placeholder:text-violet-400/80 focus:ring-0 sm:text-3xl'
-    : 'w-full rounded-2xl border border-violet-200/80 bg-white/90 px-4 py-3.5 text-center text-[17px] leading-snug text-zinc-900 shadow-md shadow-violet-100/50 outline-none ring-0 transition placeholder:text-zinc-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-300/40 disabled:cursor-not-allowed disabled:bg-violet-50/50 disabled:opacity-80 sm:py-4 sm:text-lg'
+    ? 'w-full border-0 border-b border-black bg-transparent px-0 py-3 text-left text-2xl font-medium uppercase tracking-wide text-black outline-none placeholder:text-zinc-400 focus:border-black focus:ring-0 sm:text-3xl'
+    : 'w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 text-left text-base text-black outline-none placeholder:text-zinc-400 focus:border-black disabled:opacity-60 sm:text-lg'
 
   return (
-    <div className="relative flex flex-1 flex-col justify-center gap-6 px-5 py-8 pb-12 text-left sm:px-6">
-      {resumeOffer && (
+    <div
+      className={
+        showLanding
+          ? 'relative flex min-h-[calc(100svh-4.5rem)] flex-1 flex-col bg-white'
+          : 'relative z-[1] flex min-h-[calc(100svh-4.5rem)] flex-1 flex-col bg-transparent'
+      }
+    >
+      {!showLanding && (
+        <>
+          <div
+            aria-hidden
+            className={`session-gradient-layer session-gradient-layer--idle ${gradientMode === 'idle' ? 'is-visible' : ''}`}
+          />
+          <div
+            aria-hidden
+            className={`session-gradient-layer session-gradient-layer--focus ${gradientMode === 'focus' ? 'is-visible' : ''}`}
+          />
+          <div
+            aria-hidden
+            className={`session-gradient-layer session-gradient-layer--break ${gradientMode === 'break' ? 'is-visible' : ''}`}
+          />
+          <div
+            aria-hidden
+            className={`session-gradient-layer session-gradient-layer--long-break ${gradientMode === 'long-break' ? 'is-visible' : ''}`}
+          />
+        </>
+      )}
+      <div className="relative z-[1] flex min-h-0 flex-1 flex-col">
+        {resumeOffer && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-[2px]"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           role="presentation"
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="resume-dialog-title"
-            className="illustrative-panel w-full max-w-md p-6 shadow-2xl shadow-violet-300/30"
+            className="w-full max-w-md bg-white p-8 shadow-none"
           >
             <h2
               id="resume-dialog-title"
-              className="text-lg font-semibold text-zinc-900"
+              className="text-lg font-normal text-black"
             >
               Last session
             </h2>
-            <p className="mt-2 text-[15px] leading-relaxed text-zinc-600">
+            <p className="mt-3 text-sm leading-relaxed text-zinc-500">
               {resumeOffer.phase === 'focus' ? (
                 <>
                   You have{' '}
-                  <strong className="text-zinc-900">
+                  <strong className="font-medium text-black">
                     {formatMmSs(resumeOffer.remaining)}
                   </strong>{' '}
                   left in your focus block. Resume where you left off?
@@ -252,7 +365,7 @@ export function PomodoroApp() {
               ) : (
                 <>
                   You have{' '}
-                  <strong className="text-zinc-900">
+                  <strong className="font-medium text-black">
                     {formatMmSs(resumeOffer.remaining)}
                   </strong>{' '}
                   left on your break. Continue?
@@ -260,14 +373,14 @@ export function PomodoroApp() {
               )}
             </p>
             {resumeOffer.task.trim() ? (
-              <p className="mt-2 text-sm text-zinc-600">
+              <p className="mt-2 text-sm text-zinc-500">
                 Task:{' '}
-                <span className="font-medium text-zinc-900">
+                <span className="font-medium text-black">
                   {resumeOffer.task.trim()}
                 </span>
               </p>
             ) : null}
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 className={`${btnSecondary} sm:order-1`}
@@ -285,189 +398,252 @@ export function PomodoroApp() {
             </div>
           </div>
         </div>
-      )}
-
-      <section className="mx-auto w-full max-w-[36rem] px-1 pt-2 text-center" aria-labelledby="task-hero">
-        <p className="mb-6 text-xs font-semibold uppercase tracking-[0.22em] text-violet-600/90">
-          Hits Different
-        </p>
-        <form onSubmit={onTaskSubmit} className="flex flex-col items-stretch gap-4">
-          <h1
-            id="task-hero"
-            className="hero-flourish text-balance text-4xl font-semibold uppercase leading-tight tracking-[0.06em] text-zinc-900 sm:text-5xl"
-          >
-            {showLanding
-              ? 'DEEP WORK, CHOREOGRAPHED BY YOU.'
-              : phase === 'idle'
-                ? 'CURRENT TASK'
-                : (task.trim() || 'CURRENT TASK').toUpperCase()}
-          </h1>
-          {(phase === 'idle' || resumeOffer !== null) && (
-            <input
-              id="task-input"
-              name="task"
-              type="text"
-              aria-labelledby="task-hero"
-              className={taskInputClass}
-              placeholder={
-                showLanding
-                  ? 'WHAT ARE YOU WORKING ON?'
-                  : 'Name it, then press Enter…'
-              }
-              value={task}
-              onChange={(e) => setTask(e.target.value)}
-              disabled={phase !== 'idle' || resumeOffer !== null}
-              maxLength={200}
-              autoComplete="off"
-              enterKeyHint="go"
-            />
-          )}
-          {phase === 'idle' && !resumeOffer && (
-            <p className="text-sm leading-relaxed text-zinc-600">
-              {showLanding
-                ? 'Type a task to start your session.'
-                : 'Timer and playlist start together when you press Enter.'}
-            </p>
-          )}
-        </form>
-      </section>
-
-      {showLanding ? null : (
-        <>
-          <section className={`${panelClass} text-center`} aria-label="Quota">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-600/85">
-              Quota
-            </p>
-            <div
-              key={`quota-${currentCycle}`}
-              className="quota-swipe-down mt-2 inline-block rounded-2xl border border-violet-200/90 bg-gradient-to-br from-white to-violet-50 px-5 py-2.5 text-base font-semibold text-violet-950 shadow-md shadow-violet-200/50"
-            >
-              {cycleLabel}
-            </div>
-          </section>
-
-          <section className={`${panelClass} text-center`} aria-live="polite">
-        <div
-          className={`mb-3 inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${
-            isLongBreak ? longBreakBadgeClass : phaseBadgeStyles[phase]
-          }`}
-          data-phase={phase}
-        >
-          {phase === 'idle' && 'Ready'}
-          {phase === 'focus' && 'Focus'}
-          {phase === 'break' && (isLongBreak ? 'Long break' : 'Short break')}
-        </div>
-        {phase !== 'idle' && (
-          <p className="mb-2 text-sm font-medium text-zinc-700">
-            Cycle {currentCycle} of {FOCUS_CYCLES}
-            {phase === 'focus' ? ' · focus' : isLongBreak ? ' · long break' : ' · short break'}
-          </p>
         )}
-        <div
-          className="mb-2 font-mono text-5xl font-medium tabular-nums tracking-tight text-zinc-900 sm:text-6xl"
-          role="timer"
-          aria-atomic="true"
-        >
-          {formatMmSs(remaining)}
-        </div>
 
-        {phase !== 'idle' && blockTotal > 0 && (
-          <div className="mb-4 text-left">
-            <div className="mb-1 flex justify-between text-xs font-medium text-zinc-600">
-              <span>Block slice</span>
-              <span>
-                {formatMmSs(blockTotal - remaining)} / {formatMmSs(blockTotal)}
-              </span>
-            </div>
-            <div
-              className="h-2.5 overflow-hidden rounded-full bg-gradient-to-r from-violet-100 via-amber-100 to-emerald-100"
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(sliceProgress * 100)}
-            >
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-amber-500 transition-[width] duration-1000 ease-linear"
-                style={{ width: `${sliceProgress * 100}%` }}
+        {showLanding ? (
+        <div className="grid flex-1 grid-cols-1 gap-12 px-6 py-10 lg:grid-cols-[3fr_2fr] lg:gap-20 lg:px-10 lg:py-14">
+          <div className="flex flex-col justify-center">
+            <p className="mb-3 text-sm font-normal text-zinc-500">Current Task</p>
+            <form onSubmit={onTaskSubmit} className="flex flex-col gap-6">
+              <h1
+                id="task-hero"
+                className="text-balance text-4xl font-bold uppercase leading-[1.05] tracking-tight text-black sm:text-5xl lg:text-6xl"
+              >
+                DEEP WORK, CHOREOGRAPHED BY YOU.
+              </h1>
+              <input
+                id="task-input"
+                name="task"
+                type="text"
+                aria-labelledby="task-hero"
+                className={taskInputClass}
+                placeholder="WHAT ARE YOU WORKING ON?"
+                value={task}
+                onChange={(e) => setTask(e.target.value)}
+                maxLength={200}
+                autoComplete="off"
+                enterKeyHint="go"
               />
-            </div>
+              <p className="text-sm text-zinc-500">
+                Type a task to start your session.
+              </p>
+            </form>
           </div>
+          <WhatIsAside />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-12 px-6 py-10 lg:grid-cols-[3fr_2fr] lg:gap-20 lg:px-10">
+            <div>
+              <p className="mb-3 text-sm font-normal text-zinc-500">Current Task</p>
+              <form onSubmit={onTaskSubmit} className="mb-12">
+                <h1
+                  id="task-hero"
+                  className="text-balance text-4xl font-bold uppercase leading-[1.05] tracking-tight text-black sm:text-5xl lg:text-6xl"
+                >
+                  {phase === 'idle'
+                    ? 'CURRENT TASK'
+                    : (task.trim() || 'CURRENT TASK').toUpperCase()}
+                </h1>
+                {(phase === 'idle' || resumeOffer !== null) && (
+                  <input
+                    id="task-input"
+                    name="task"
+                    type="text"
+                    aria-labelledby="task-hero"
+                    className={`mt-8 ${taskInputClass}`}
+                    placeholder="Name it, then press Enter…"
+                    value={task}
+                    onChange={(e) => setTask(e.target.value)}
+                    disabled={phase !== 'idle' || resumeOffer !== null}
+                    maxLength={200}
+                    autoComplete="off"
+                    enterKeyHint="go"
+                  />
+                )}
+                {phase === 'idle' && !resumeOffer && (
+                  <p className="mt-4 text-sm text-zinc-500">
+                    Timer and playlist start together when you press Enter.
+                  </p>
+                )}
+              </form>
+
+              <p className="mb-4 text-sm font-normal text-zinc-600">About</p>
+              <div
+                className="mb-4 flex flex-wrap gap-2"
+                role="tablist"
+                aria-label="About sections"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  id="about-tab-hits-different"
+                  aria-selected={aboutTab === 'hitsDifferent'}
+                  aria-controls="about-panel-hits-different"
+                  className={`${aboutNavPill} max-w-full whitespace-normal text-center sm:whitespace-nowrap ${aboutTab === 'hitsDifferent' ? aboutNavPillActive : aboutNavPillIdle}`}
+                  onClick={() => setAboutTab('hitsDifferent')}
+                >
+                  Hits Different
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="about-tab-pomodoro"
+                  aria-selected={aboutTab === 'pomodoro'}
+                  aria-controls="about-panel-pomodoro"
+                  className={`${aboutNavPill} ${aboutTab === 'pomodoro' ? aboutNavPillActive : aboutNavPillIdle}`}
+                  onClick={() => setAboutTab('pomodoro')}
+                >
+                  Pomodoro technique
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="about-tab-customization"
+                  aria-selected={aboutTab === 'customization'}
+                  aria-controls="about-panel-customization"
+                  className={`${aboutNavPill} ${aboutTab === 'customization' ? aboutNavPillActive : aboutNavPillIdle}`}
+                  onClick={() => setAboutTab('customization')}
+                >
+                  Customization
+                </button>
+              </div>
+              <p className="mt-2 max-w-md text-xs leading-relaxed text-zinc-400 lg:hidden">
+                Details for the selected topic appear in the section below.
+              </p>
+            </div>
+            <AboutRightAside />
+          </div>
+
+          <div className="space-y-12 px-6 pb-12 lg:px-10">
+            <section className="text-left" aria-live="polite">
+              <div
+                key={`cycle-${currentCycle}-${phase}`}
+                className="quota-swipe-down mb-6 inline-block text-xl font-semibold uppercase tracking-wide text-black sm:text-2xl"
+              >
+                {cycleLabel}
+              </div>
+              <div
+                className={`mb-4 inline-block px-2 py-1 text-xs font-semibold uppercase tracking-wider ${
+                  isLongBreak ? longBreakBadgeClass : phaseBadgeStyles[phase]
+                }`}
+                data-phase={phase}
+              >
+                {phase === 'idle' && 'Ready'}
+                {phase === 'focus' && 'Focus'}
+                {phase === 'break' &&
+                  (isLongBreak ? 'Long break' : 'Short break')}
+              </div>
+              {phase !== 'idle' && (
+                <p className="mb-2 text-sm text-zinc-500">
+                  Cycle {currentCycle} of {FOCUS_CYCLES}
+                  {phase === 'focus'
+                    ? ' · focus'
+                    : isLongBreak
+                      ? ' · long break'
+                      : ' · short break'}
+                </p>
+              )}
+              <div
+                className="mb-6 font-mono text-5xl font-medium tabular-nums tracking-tight text-black sm:text-6xl"
+                role="timer"
+                aria-atomic="true"
+              >
+                {formatMmSs(remaining)}
+              </div>
+
+              {phase !== 'idle' && blockTotal > 0 && (
+                <div className="mb-6 max-w-md">
+                  <div className="mb-1 flex justify-between text-xs text-zinc-500">
+                    <span>Block slice</span>
+                    <span>
+                      {formatMmSs(blockTotal - remaining)} /{' '}
+                      {formatMmSs(blockTotal)}
+                    </span>
+                  </div>
+                  <div
+                    className="h-1 overflow-hidden bg-zinc-200"
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round(sliceProgress * 100)}
+                  >
+                    <div
+                      className="h-full bg-black transition-[width] duration-1000 ease-linear"
+                      style={{ width: `${sliceProgress * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <p className="mb-6 max-w-xl text-sm leading-relaxed text-zinc-500">
+                {phase === 'idle' &&
+                  `${FOCUS_CYCLES} focus blocks (${FOCUS_SECONDS / 60} min each). After blocks 1–3: ${BREAK_SECONDS / 60} min breaks. After block ${FOCUS_CYCLES}: a ${LONG_BREAK_SECONDS / 60} min long break — then name a new task for the next round.`}
+                {phase === 'focus' &&
+                  'Stay on task until the timer ends or skip.'}
+                {phase === 'break' &&
+                  (isLongBreak
+                    ? 'Long break — step away. When it ends, you’ll set a new task for the next round.'
+                    : 'Short break — playlist plays below.')}
+              </p>
+
+              <div className="flex flex-wrap gap-3">
+                {phase === 'focus' && (
+                  <button
+                    type="button"
+                    className={btnSecondary}
+                    onClick={skipToBreak}
+                  >
+                    End focus early
+                  </button>
+                )}
+                {phase === 'break' && (
+                  <button
+                    type="button"
+                    className={btnSecondary}
+                    onClick={skipBreak}
+                  >
+                    {isLongBreak ? 'Skip long break' : 'Skip short break'}
+                  </button>
+                )}
+              </div>
+            </section>
+
+            {playlist && (
+              <section aria-label="Playlist player">
+                <h2 className="mb-2 text-base font-normal text-black">
+                  {playlist.title}
+                </h2>
+                <p className="mb-4 max-w-xl text-sm leading-relaxed text-zinc-400">
+                  Playback starts automatically; it may begin muted — use the
+                  player controls to unmute if needed.
+                </p>
+                <div className="relative aspect-video w-full max-w-3xl overflow-hidden bg-black">
+                  <iframe
+                    key={`${phase}-${focusIndex}-${playlist.embedUrl}`}
+                    className="absolute inset-0 h-full w-full border-0"
+                    title={
+                      phase === 'focus'
+                        ? 'Focus session music'
+                        : 'Break session music'
+                    }
+                    src={embedUrlWithAutoplay(playlist.embedUrl)}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allowFullScreen
+                  />
+                </div>
+              </section>
+            )}
+          </div>
+        </>
         )}
 
-        <p className="mb-6 text-[15px] leading-relaxed text-zinc-600">
-          {phase === 'idle' &&
-            `${FOCUS_CYCLES} focus blocks (${FOCUS_SECONDS / 60} min each). After blocks 1–3: ${BREAK_SECONDS / 60} min breaks. After block ${FOCUS_CYCLES}: a ${LONG_BREAK_SECONDS / 60} min long break — then name a new task for the next round.`}
-          {phase === 'focus' && 'Stay on task until the timer ends or skip.'}
-          {phase === 'break' &&
-            (isLongBreak
-              ? 'Long break — step away. When it ends, you’ll set a new task for the next round.'
-              : 'Short break — break playlist plays below.')}
-        </p>
-
-        <div className="flex flex-wrap justify-center gap-3">
-          {phase === 'focus' && (
-            <button
-              type="button"
-              className={btnSecondary}
-              onClick={skipToBreak}
-            >
-              End focus early
-            </button>
-          )}
-          {phase === 'break' && (
-            <button type="button" className={btnSecondary} onClick={skipBreak}>
-              {isLongBreak ? 'Skip long break' : 'Skip short break'}
-            </button>
-          )}
-        </div>
-          </section>
-
-          {playlist && (
-            <section className={panelClass} aria-label="Playlist player">
-          <h2 className="mb-4 text-lg font-semibold tracking-tight text-zinc-900">
-            {playlist.title}
-          </h2>
-          <p className="mb-4 text-sm leading-relaxed text-zinc-600">
-            Playback starts automatically; it may begin muted — use the player
-            controls to unmute if needed.
-          </p>
-          <div className="mb-4 rounded-2xl border border-violet-100/90 bg-gradient-to-br from-white to-fuchsia-50/40 px-3 py-3 shadow-inner shadow-violet-100/60">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-violet-600/80">
-              Sound wave
-            </p>
-            <div
-              className="rainbow-wave"
-              role="img"
-              aria-label="Animated rainbow sound wave"
-            >
-              {waveBars.map((bar) => (
-                <span
-                  key={bar}
-                  className="rainbow-wave__bar"
-                  style={{ animationDelay: `${bar * 90}ms` }}
-                />
-              ))}
-            </div>
-          </div>
-          <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black shadow-inner">
-            <iframe
-              key={`${phase}-${focusIndex}-${playlist.embedUrl}`}
-              className="absolute inset-0 h-full w-full border-0"
-              title={
-                phase === 'focus'
-                  ? 'Focus session music'
-                  : 'Break session music'
-              }
-              src={embedUrlWithAutoplay(playlist.embedUrl)}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-            />
-          </div>
-            </section>
-          )}
-        </>
-      )}
+        <footer
+          className="relative left-1/2 z-[1] mt-auto h-14 w-screen max-w-[100vw] shrink-0 -translate-x-1/2 bg-black"
+          aria-hidden
+        />
+      </div>
     </div>
   )
 }
