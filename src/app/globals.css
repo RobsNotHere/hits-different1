@@ -6,7 +6,7 @@
 
 @layer base {
   body {
-    font-family: var(--font-classic), Georgia, 'Times New Roman', Times, serif;
+    font-family: var(--font-inter), system-ui, sans-serif;
     @apply m-0 min-h-svh bg-pink-50 text-[17px] leading-relaxed tracking-normal text-zinc-900 antialiased;
   }
 }
@@ -26,9 +26,9 @@
   animation: quota-swipe-down 360ms ease both;
 }
 
-/* Futuristic square-ish display (Orbitron) — hero + memo */
+/* Hero + memo (Inter) */
 .hero-memo {
-  font-family: var(--font-display), system-ui, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
   margin-bottom: 0.75rem;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -38,7 +38,7 @@
 }
 
 .hero-title {
-  font-family: var(--font-display), system-ui, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
   font-weight: 700;
   font-size: clamp(2.75rem, 14vw, 128px);
   line-height: 0.92;
@@ -48,7 +48,7 @@
 }
 
 .hero-title-task {
-  font-family: var(--font-display), system-ui, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
   font-weight: 700;
   font-size: clamp(1.75rem, 5vw, 3rem);
   line-height: 1.05;

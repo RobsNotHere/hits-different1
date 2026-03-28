@@ -43,7 +43,7 @@ function formatCycleOrdinal(cycle: number): string {
   return `${cycle}th`
 }
 
-/** Memo line + 3-word hero (`.hero-title`, Orbitron, up to 128px). */
+/** Memo line + 3-word hero (`.hero-title`, Inter, up to 128px). */
 const HERO_MEMO = 'Memo · demo build · playlist focus mode'
 const HERO_TITLE = 'Focus Hits Different'
 

@@ -1,19 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Libre_Baskerville, Orbitron } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import './globals.css'
 
-const classicSerif = Libre_Baskerville({
-  weight: ['400', '700'],
+const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-classic',
-  display: 'swap',
-})
-
-const displayFont = Orbitron({
-  weight: ['600', '700', '900'],
-  subsets: ['latin'],
-  variable: '--font-display',
+  variable: '--font-inter',
   display: 'swap',
 })
 
@@ -31,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${classicSerif.variable} ${displayFont.variable}`}>
+    <html lang="en" className={inter.variable}>
       <body className="min-h-svh bg-pink-50 text-zinc-900 antialiased">
         <header className="sticky top-0 z-20 w-full border-0 bg-pink-50 px-6 py-5 sm:px-10">
           <nav className="mx-auto flex max-w-6xl items-center justify-between" aria-label="Primary">
