@@ -25,37 +25,3 @@
 .quota-swipe-down {
   animation: quota-swipe-down 360ms ease both;
 }
-
-/* Session mode: subtle tint; scrolls with page; full-bleed width; crossfaded in PomodoroApp */
-.session-gradient-layer {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  z-index: 0;
-  width: 100vw;
-  transform: translateX(-50%);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 700ms ease-in-out;
-}
-
-.session-gradient-layer.is-visible {
-  opacity: 1;
-}
-
-.session-gradient-layer--idle {
-  background: linear-gradient(160deg, #ffffff 0%, #f7f7f8 45%, #faf9fb 100%);
-}
-
-.session-gradient-layer--focus {
-  background: linear-gradient(155deg, #ffffff 0%, #f8f6ff 55%, #f3f0ff 100%);
-}
-
-.session-gradient-layer--break {
-  background: linear-gradient(158deg, #ffffff 0%, #fffbf7 50%, #fff5f0 100%);
-}
-
-.session-gradient-layer--long-break {
-  background: linear-gradient(162deg, #ffffff 0%, #f6fbf9 50%, #f2f9f6 100%);
-}

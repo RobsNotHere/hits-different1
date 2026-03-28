@@ -8,15 +8,15 @@ export const LONG_BREAK_SECONDS = 30 * 60
 /** Number of focus blocks per full round (each followed by a break). */
 export const FOCUS_CYCLES = 4
 
-export const DEMO_FOCUS_TITLE = 'Focus stream'
-export const DEMO_BREAK_TITLE = 'Break'
+const DEMO_FOCUS_TITLE = 'Focus stream'
+const DEMO_BREAK_TITLE = 'Break'
 
 /** Lofi study stream (demo focus). */
-export const DEMO_FOCUS_EMBED =
+const DEMO_FOCUS_EMBED =
   'https://www.youtube-nocookie.com/embed/jfKfPfyJRdk?rel=0'
 
 /** Break: single YouTube video (https://www.youtube.com/watch?v=28KRPhVzCus). */
-export const DEMO_BREAK_EMBED =
+const DEMO_BREAK_EMBED =
   'https://www.youtube-nocookie.com/embed/28KRPhVzCus?rel=0'
 
 /**

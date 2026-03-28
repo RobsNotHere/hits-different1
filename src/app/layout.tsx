@@ -27,10 +27,10 @@ export default function RootLayout({
               Hits Different
             </Link>
             <Link
-              href="/#session"
+              href="/#task-input"
               className="text-sm font-normal tracking-wide text-black hover:opacity-70"
             >
-              Get Started
+              Get started
             </Link>
           </nav>
         </header>
