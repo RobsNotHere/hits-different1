@@ -338,7 +338,7 @@ export function PomodoroApp() {
   }, [])
 
   return (
-    <div className="relative flex min-h-[calc(100svh-4.5rem)] flex-1 flex-col bg-pink-50">
+    <div className="relative flex min-h-0 flex-1 flex-col bg-pink-50">
       <div className="relative flex min-h-0 flex-1 flex-col">
         {resumeOffer && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -402,7 +402,7 @@ export function PomodoroApp() {
         )}
 
         {showLanding ? (
-          <div className="flex flex-1 flex-col justify-center px-6 py-10 lg:px-10 lg:py-14">
+          <div className="flex flex-1 flex-col justify-center px-6 py-12 sm:px-10 sm:py-16 lg:py-20">
             <form
               onSubmit={onTaskSubmit}
               className="mx-auto flex w-full max-w-5xl flex-col gap-6"
@@ -414,10 +414,6 @@ export function PomodoroApp() {
               >
                 {HERO_TITLE}
               </h1>
-              <p className="text-sm font-normal text-zinc-500">
-                Name what you are working on, then press Enter to start focus
-                and music together.
-              </p>
               <input
                 id="task-input"
                 name="task"
@@ -431,11 +427,15 @@ export function PomodoroApp() {
                 autoComplete="off"
                 enterKeyHint="go"
               />
+              <p className="text-sm font-normal text-zinc-500">
+                Name what you are working on, then press Enter to start focus
+                and music together.
+              </p>
             </form>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-12 px-6 py-10 lg:grid-cols-[3fr_2fr] lg:gap-20 lg:px-10">
+            <div className="grid grid-cols-1 gap-12 px-6 py-10 sm:px-10 lg:grid-cols-[3fr_2fr] lg:gap-20 lg:py-12">
               <div className={resumeOffer ? 'lg:col-span-2 lg:max-w-2xl' : ''}>
                 {resumeOffer ? (
                   <div className="mb-12">
@@ -549,7 +549,7 @@ export function PomodoroApp() {
               {!resumeOffer && <AboutRightAside activeTab={aboutTab} />}
             </div>
 
-            <div className="space-y-12 px-6 pb-12 lg:px-10">
+            <div className="space-y-12 px-6 pb-14 sm:px-10 sm:pb-16">
               <section className="text-left" aria-live="polite">
                 <div
                   key={`cycle-${currentCycle}-${phase}`}
@@ -664,7 +664,7 @@ export function PomodoroApp() {
         )}
 
         <footer
-          className="relative left-1/2 z-[1] mt-auto h-14 w-screen max-w-[100vw] shrink-0 -translate-x-1/2 bg-black"
+          className="mt-auto h-14 w-full shrink-0 bg-pink-50"
           aria-hidden
         />
       </div>

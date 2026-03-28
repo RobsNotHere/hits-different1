@@ -24,8 +24,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={inter.variable}>
-      <body className="min-h-svh bg-pink-50 text-zinc-900 antialiased">
-        <header className="sticky top-0 z-20 w-full border-0 bg-pink-50 px-6 py-5 sm:px-10">
+      <body className="flex min-h-svh flex-col bg-pink-50 text-zinc-900 antialiased">
+        <header className="sticky top-0 z-20 w-full shrink-0 border-0 bg-pink-50 px-6 py-5 sm:px-10">
           <nav className="mx-auto flex max-w-6xl items-center justify-between" aria-label="Primary">
             <Link
               href="/"
@@ -43,7 +43,7 @@ export default function RootLayout({
         </header>
         <div
           id="session"
-          className="relative z-[1] mx-auto flex min-h-[calc(100svh-4.5rem)] w-full max-w-6xl flex-1 flex-col"
+          className="relative z-[1] mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col"
         >
           {children}
         </div>
