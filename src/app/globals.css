@@ -26,6 +26,49 @@
   animation: quota-swipe-down 360ms ease both;
 }
 
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-rise {
+  animation: landing-rise 0.55s ease both;
+}
+
+.landing-rise-1 {
+  animation-delay: 0ms;
+}
+
+.landing-rise-2 {
+  animation-delay: 70ms;
+}
+
+.landing-rise-3 {
+  animation-delay: 140ms;
+}
+
+.landing-rise-4 {
+  animation-delay: 210ms;
+}
+
+.landing-rise-5 {
+  animation-delay: 280ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-rise {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* Hero + memo (Inter) */
 .hero-memo {
   font-family: var(--font-inter), system-ui, sans-serif;

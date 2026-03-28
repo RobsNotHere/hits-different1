@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ChangeEvent,
   type FormEvent,
 } from 'react'
 import {
@@ -44,12 +45,14 @@ function formatCycleOrdinal(cycle: number): string {
 }
 
 /** Memo line + 3-word hero (`.hero-title`, Inter, up to 128px). */
-const HERO_MEMO = 'Memo · demo build · playlist focus mode'
+const HERO_MEMO = 'Demo · pomodoro + playlist'
 const HERO_TITLE = 'Focus Hits Different'
+const LANDING_TAGLINE =
+  'Timed focus blocks with music in the browser. This preview uses built-in demo playlists—not your Spotify or YouTube yet.'
 
 const HITS_DIFFERENT_COPY = [
-  'Hits Different introduces a gimmick for distracted adults by combining event features and focus block with your Spotify playlist. Inspired by the success of short-form videos, Hits Different derives your media addiction into a productive task.',
-  'The concept is a productivity tool that connects to Spotify or YouTube, takes an existing playlist, and turns it into a roughly 25-minute Pomodoro-style focus block. After the focus block ends, the product would automatically switch the user to a designated break playlist. This gives the project a clear product concept with a behavior loop, user value, and room for future feature expansion.',
+  'Hits Different is for anyone who reaches for music or video when they should be working. It pairs Pomodoro-style focus rounds with playback during work and breaks—structure first, then sound.',
+  'This demo runs entirely in your browser: name a task, start a focus block, and use the embedded player for music. Integrations with your own playlists are the next step; here you can try the timer loop, resume flow, and layout.',
 ] as const
 
 const FOCUS_MINUTES = FOCUS_SECONDS / 60
@@ -181,6 +184,8 @@ export function PomodoroApp() {
   const [remaining, setRemaining] = useState(FOCUS_SECONDS)
   const [hydrated, setHydrated] = useState(false)
   const [resumeOffer, setResumeOffer] = useState<PersistedSession | null>(null)
+  const [taskFieldError, setTaskFieldError] = useState(false)
+  const taskInputRef = useRef<HTMLInputElement>(null)
 
   const phaseRef = useRef(phase)
   const focusIndexRef = useRef(focusIndex)
@@ -259,6 +264,7 @@ export function PomodoroApp() {
     setFocusIndex(0)
     setRemaining(FOCUS_SECONDS)
     setTask('')
+    setTaskFieldError(false)
   }, [])
 
   const commitTaskAndStartFocus = useCallback(() => {
@@ -274,10 +280,21 @@ export function PomodoroApp() {
   const onTaskSubmit = useCallback(
     (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault()
+      if (!task.trim()) {
+        setTaskFieldError(true)
+        queueMicrotask(() => taskInputRef.current?.focus())
+        return
+      }
+      setTaskFieldError(false)
       commitTaskAndStartFocus()
     },
-    [commitTaskAndStartFocus],
+    [commitTaskAndStartFocus, task],
   )
+
+  const onTaskChange = useCallback((ev: ChangeEvent<HTMLInputElement>) => {
+    setTask(ev.target.value)
+    setTaskFieldError(false)
+  }, [])
 
   const skipToBreak = useCallback(() => {
     if (phase !== 'focus') return
@@ -336,6 +353,12 @@ export function PomodoroApp() {
   const selectAboutTab = useCallback((tab: AboutTab) => {
     setAboutTab(tab)
   }, [])
+
+  const taskInputDescribedBy = taskFieldError
+    ? 'task-input-hint task-input-error'
+    : 'task-input-hint'
+
+  const taskInputErrorClass = taskFieldError ? ' border-b-red-700' : ''
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col bg-pink-50">
@@ -405,32 +428,56 @@ export function PomodoroApp() {
           <div className="flex flex-1 flex-col justify-center px-6 py-12 sm:px-10 sm:py-16 lg:py-20">
             <form
               onSubmit={onTaskSubmit}
-              className="mx-auto flex w-full max-w-5xl flex-col gap-6"
+              className="mx-auto flex w-full max-w-5xl flex-col gap-8"
             >
-              <p className="hero-memo">{HERO_MEMO}</p>
-              <h1
-                id="task-hero"
-                className="hero-title text-balance"
-              >
-                {HERO_TITLE}
-              </h1>
-              <input
-                id="task-input"
-                name="task"
-                type="text"
-                aria-labelledby="task-hero"
-                className={taskInputClass}
-                placeholder="What are you working on?"
-                value={task}
-                onChange={(e) => setTask(e.target.value)}
-                maxLength={200}
-                autoComplete="off"
-                enterKeyHint="go"
-              />
-              <p className="text-sm font-normal text-zinc-500">
-                Name what you are working on, then press Enter to start focus
-                and music together.
-              </p>
+              <div className="flex max-w-4xl flex-col gap-5">
+                <p className="hero-memo landing-rise landing-rise-1">
+                  {HERO_MEMO}
+                </p>
+                <p className="landing-rise landing-rise-2 max-w-xl text-base leading-snug text-zinc-600 sm:text-lg">
+                  {LANDING_TAGLINE}
+                </p>
+                <h1
+                  id="task-hero"
+                  className="hero-title landing-rise landing-rise-3 text-balance"
+                >
+                  {HERO_TITLE}
+                </h1>
+              </div>
+              <div className="flex max-w-2xl flex-col gap-3">
+                <input
+                  ref={taskInputRef}
+                  id="task-input"
+                  name="task"
+                  type="text"
+                  aria-labelledby="task-hero"
+                  aria-describedby={taskInputDescribedBy}
+                  aria-invalid={taskFieldError}
+                  className={`${taskInputClass}${taskInputErrorClass} landing-rise landing-rise-4`}
+                  placeholder="What are you working on?"
+                  value={task}
+                  onChange={onTaskChange}
+                  maxLength={200}
+                  autoComplete="off"
+                  enterKeyHint="go"
+                />
+                <p
+                  id="task-input-hint"
+                  className="landing-rise landing-rise-5 text-sm leading-relaxed text-zinc-500"
+                >
+                  Name your task, then press Enter. When the player appears,
+                  unmute if your browser keeps audio off.
+                </p>
+                {taskFieldError ? (
+                  <p
+                    id="task-input-error"
+                    role="alert"
+                    className="text-sm font-medium text-black"
+                  >
+                    Enter a short task name to start.
+                  </p>
+                ) : null}
+              </div>
             </form>
           </div>
         ) : (
@@ -477,24 +524,42 @@ export function PomodoroApp() {
                       </h1>
                       {phase === 'idle' && (
                         <input
+                          ref={taskInputRef}
                           id="task-input"
                           name="task"
                           type="text"
                           aria-labelledby="task-hero"
-                          className={`mt-8 ${taskInputClass}`}
+                          aria-describedby={taskInputDescribedBy}
+                          aria-invalid={taskFieldError}
+                          className={`mt-8 ${taskInputClass}${taskInputErrorClass}`}
                           placeholder="Type a task, then press Enter…"
                           value={task}
-                          onChange={(e) => setTask(e.target.value)}
+                          onChange={onTaskChange}
                           maxLength={200}
                           autoComplete="off"
                           enterKeyHint="go"
                         />
                       )}
                       {phase === 'idle' && (
-                        <p className="mt-4 text-sm text-zinc-500">
-                          Each focus block is {FOCUS_MINUTES} minutes with a demo
-                          playlist. Press Enter when you are ready.
-                        </p>
+                        <>
+                          <p
+                            id="task-input-hint"
+                            className="mt-4 text-sm leading-relaxed text-zinc-500"
+                          >
+                            Each block is {FOCUS_MINUTES} minutes with a demo
+                            playlist. Press Enter when you are ready; unmute
+                            the player if needed.
+                          </p>
+                          {taskFieldError ? (
+                            <p
+                              id="task-input-error"
+                              role="alert"
+                              className="mt-2 text-sm font-medium text-black"
+                            >
+                              Enter a short task name to start.
+                            </p>
+                          ) : null}
+                        </>
                       )}
                     </form>
 

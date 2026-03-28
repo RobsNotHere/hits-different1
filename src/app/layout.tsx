@@ -11,9 +11,22 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: 'Hits Different — focus blocks',
-  description: 'Pomodoro-style focus blocks with demo playlists.',
+  description:
+    'Name a task and run timed focus rounds with demo playlists in the browser. Pomodoro-style blocks, breaks, and local resume—no accounts.',
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+  },
+  openGraph: {
+    title: 'Hits Different — focus blocks',
+    description:
+      'Timed focus sessions with music in the browser. Demo playlists, Pomodoro-style rounds, and resume where you left off.',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Hits Different — focus blocks',
+    description:
+      'Timed focus sessions with demo playlists. Simple, no login required.',
   },
 }
 
