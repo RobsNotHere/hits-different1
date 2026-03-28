@@ -43,6 +43,10 @@ function formatCycleOrdinal(cycle: number): string {
   return `${cycle}th`
 }
 
+/** Memo line + 3-word hero (`.hero-title`, Orbitron, up to 128px). */
+const HERO_MEMO = 'Memo · demo build · playlist focus mode'
+const HERO_TITLE = 'Focus Hits Different'
+
 const HITS_DIFFERENT_COPY = [
   'Hits Different introduces a gimmick for distracted adults by combining event features and focus block with your Spotify playlist. Inspired by the success of short-form videos, Hits Different derives your media addiction into a productive task.',
   'The concept is a productivity tool that connects to Spotify or YouTube, takes an existing playlist, and turns it into a roughly 25-minute Pomodoro-style focus block. After the focus block ends, the product would automatically switch the user to a designated break playlist. This gives the project a clear product concept with a behavior loop, user value, and room for future feature expansion.',
@@ -401,13 +405,14 @@ export function PomodoroApp() {
           <div className="flex flex-1 flex-col justify-center px-6 py-10 lg:px-10 lg:py-14">
             <form
               onSubmit={onTaskSubmit}
-              className="mx-auto flex w-full max-w-3xl flex-col gap-6"
+              className="mx-auto flex w-full max-w-5xl flex-col gap-6"
             >
+              <p className="hero-memo">{HERO_MEMO}</p>
               <h1
                 id="task-hero"
-                className="text-balance text-4xl font-bold uppercase leading-[1.05] tracking-tight text-black sm:text-5xl lg:text-6xl"
+                className="hero-title text-balance"
               >
-                DEEP WORK, CHOREOGRAPHED BY YOU.
+                {HERO_TITLE}
               </h1>
               <p className="text-sm font-normal text-zinc-500">
                 Name what you are working on, then press Enter to start focus
@@ -450,16 +455,24 @@ export function PomodoroApp() {
                   </div>
                 ) : (
                   <>
-                    <p className="mb-3 text-sm font-normal text-zinc-500">
-                      {phase === 'idle' ? 'Next task' : 'Current task'}
-                    </p>
+                    {phase === 'idle' ? (
+                      <p className="hero-memo">{HERO_MEMO}</p>
+                    ) : (
+                      <p className="mb-3 text-sm font-normal text-zinc-500">
+                        Current task
+                      </p>
+                    )}
                     <form onSubmit={onTaskSubmit} className="mb-12">
                       <h1
                         id="task-hero"
-                        className="text-balance text-4xl font-bold uppercase leading-[1.05] tracking-tight text-black sm:text-5xl lg:text-6xl"
+                        className={
+                          phase === 'idle'
+                            ? 'hero-title text-balance'
+                            : 'hero-title-task text-balance'
+                        }
                       >
                         {phase === 'idle'
-                          ? 'WHAT ARE YOU WORKING ON NEXT?'
+                          ? HERO_TITLE
                           : (task.trim() || 'UNTITLED TASK').toUpperCase()}
                       </h1>
                       {phase === 'idle' && (
