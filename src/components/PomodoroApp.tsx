@@ -71,21 +71,6 @@ const ABOUT_NAV_PILL_ACTIVE = 'bg-black text-white'
 const ABOUT_NAV_PILL_IDLE =
   'bg-transparent text-black hover:bg-black/[0.04] active:bg-black/[0.08]'
 
-const WhatIsAside = memo(function WhatIsAside() {
-  return (
-    <aside className="lg:pt-2">
-      <h2 className="mb-6 text-base font-normal text-zinc-500">
-        What is Hits Different
-      </h2>
-      <div className="space-y-4 text-sm leading-relaxed text-zinc-400">
-        {HITS_DIFFERENT_COPY.map((p, i) => (
-          <p key={i}>{p}</p>
-        ))}
-      </div>
-    </aside>
-  )
-})
-
 const AboutRightAside = memo(function AboutRightAside({
   activeTab,
 }: {
@@ -413,35 +398,35 @@ export function PomodoroApp() {
         )}
 
         {showLanding ? (
-          <div className="grid flex-1 grid-cols-1 gap-12 px-6 py-10 lg:grid-cols-[3fr_2fr] lg:gap-20 lg:px-10 lg:py-14">
-            <div className="flex flex-col justify-center">
-              <form onSubmit={onTaskSubmit} className="flex flex-col gap-6">
-                <h1
-                  id="task-hero"
-                  className="text-balance text-4xl font-bold uppercase leading-[1.05] tracking-tight text-black sm:text-5xl lg:text-6xl"
-                >
-                  DEEP WORK, CHOREOGRAPHED BY YOU.
-                </h1>
-                <p className="text-sm font-normal text-zinc-500">
-                  Name what you are working on, then press Enter to start focus
-                  and music together.
-                </p>
-                <input
-                  id="task-input"
-                  name="task"
-                  type="text"
-                  aria-labelledby="task-hero"
-                  className={taskInputClass}
-                  placeholder="What are you working on?"
-                  value={task}
-                  onChange={(e) => setTask(e.target.value)}
-                  maxLength={200}
-                  autoComplete="off"
-                  enterKeyHint="go"
-                />
-              </form>
-            </div>
-            <WhatIsAside />
+          <div className="flex flex-1 flex-col justify-center px-6 py-10 lg:px-10 lg:py-14">
+            <form
+              onSubmit={onTaskSubmit}
+              className="mx-auto flex w-full max-w-3xl flex-col gap-6"
+            >
+              <h1
+                id="task-hero"
+                className="text-balance text-4xl font-bold uppercase leading-[1.05] tracking-tight text-black sm:text-5xl lg:text-6xl"
+              >
+                DEEP WORK, CHOREOGRAPHED BY YOU.
+              </h1>
+              <p className="text-sm font-normal text-zinc-500">
+                Name what you are working on, then press Enter to start focus
+                and music together.
+              </p>
+              <input
+                id="task-input"
+                name="task"
+                type="text"
+                aria-labelledby="task-hero"
+                className={taskInputClass}
+                placeholder="What are you working on?"
+                value={task}
+                onChange={(e) => setTask(e.target.value)}
+                maxLength={200}
+                autoComplete="off"
+                enterKeyHint="go"
+              />
+            </form>
           </div>
         ) : (
           <>
