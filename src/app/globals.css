@@ -1,13 +1,13 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: ui-monospace, Consolas, monospace;
+  --font-mono: ui-monospace, 'Cambria', Consolas, monospace;
 }
 
 @layer base {
   body {
-    @apply m-0 min-h-svh bg-white font-sans text-[17px] leading-relaxed tracking-wide text-zinc-900 antialiased;
+    font-family: var(--font-classic), Georgia, 'Times New Roman', Times, serif;
+    @apply m-0 min-h-svh bg-pink-50 text-[17px] leading-relaxed tracking-normal text-zinc-900 antialiased;
   }
 }
 

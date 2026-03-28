@@ -326,15 +326,15 @@ export function PomodoroApp() {
   }, [phase, remaining, isLongBreak, task, currentCycle])
 
   const taskInputClass = showLanding
-    ? 'w-full border-0 border-b border-black bg-transparent px-0 py-3 text-left text-2xl font-medium tracking-wide text-black outline-none placeholder:text-zinc-400 focus:border-black focus:ring-0 sm:text-3xl'
-    : 'w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 text-left text-base text-black outline-none placeholder:text-zinc-400 focus:border-black disabled:opacity-60 sm:text-lg'
+    ? 'w-full border-0 border-b border-black bg-transparent px-0 py-3 text-left text-2xl font-medium tracking-wide text-black outline-none placeholder:text-xs placeholder:uppercase placeholder:tracking-wide placeholder:text-zinc-400 focus:border-black focus:ring-0 sm:text-3xl sm:placeholder:text-sm'
+    : 'w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 text-left text-base text-black outline-none placeholder:text-xs placeholder:uppercase placeholder:tracking-wide placeholder:text-zinc-400 focus:border-black disabled:opacity-60 sm:text-lg'
 
   const selectAboutTab = useCallback((tab: AboutTab) => {
     setAboutTab(tab)
   }, [])
 
   return (
-    <div className="relative flex min-h-[calc(100svh-4.5rem)] flex-1 flex-col bg-white">
+    <div className="relative flex min-h-[calc(100svh-4.5rem)] flex-1 flex-col bg-pink-50">
       <div className="relative flex min-h-0 flex-1 flex-col">
         {resumeOffer && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
