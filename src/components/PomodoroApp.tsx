@@ -425,10 +425,10 @@ export function PomodoroApp() {
         )}
 
         {showLanding ? (
-          <div className="flex flex-1 flex-col justify-center px-6 py-12 sm:px-10 sm:py-16 lg:py-20">
+          <div className="flex flex-1 flex-col justify-center py-12 sm:py-16 lg:py-20">
             <form
               onSubmit={onTaskSubmit}
-              className="mx-auto flex w-full max-w-5xl flex-col gap-8"
+              className="flex w-full flex-col gap-8"
             >
               <div className="flex max-w-4xl flex-col gap-5">
                 <p className="hero-memo landing-rise landing-rise-1">
@@ -482,7 +482,7 @@ export function PomodoroApp() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-12 px-6 py-10 sm:px-10 lg:grid-cols-[3fr_2fr] lg:gap-20 lg:py-12">
+            <div className="grid grid-cols-1 gap-12 py-10 lg:grid-cols-[3fr_2fr] lg:gap-20 lg:py-12">
               <div className={resumeOffer ? 'lg:col-span-2 lg:max-w-2xl' : ''}>
                 {resumeOffer ? (
                   <div className="mb-12">
@@ -614,7 +614,7 @@ export function PomodoroApp() {
               {!resumeOffer && <AboutRightAside activeTab={aboutTab} />}
             </div>
 
-            <div className="space-y-12 px-6 pb-14 sm:px-10 sm:pb-16">
+            <div className="space-y-12 pb-14 sm:pb-16">
               <section className="text-left" aria-live="polite">
                 <div
                   key={`cycle-${currentCycle}-${phase}`}

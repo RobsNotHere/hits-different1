@@ -37,28 +37,35 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={inter.variable}>
-      <body className="flex min-h-svh flex-col bg-pink-50 text-zinc-900 antialiased">
-        <header className="sticky top-0 z-20 w-full shrink-0 border-0 bg-pink-50 px-6 py-5 sm:px-10">
-          <nav className="mx-auto flex max-w-6xl items-center justify-between" aria-label="Primary">
-            <Link
-              href="/"
-              className="text-sm font-normal tracking-wide text-black"
+      <body className="bg-pink-50 text-zinc-900 antialiased">
+        <div className="flex min-h-svh w-full flex-col px-6 lg:px-[160px]">
+          <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col min-h-0">
+            <header className="sticky top-0 z-20 w-full shrink-0 border-0 bg-pink-50 py-5">
+              <nav
+                className="flex w-full items-center justify-between"
+                aria-label="Primary"
+              >
+                <Link
+                  href="/"
+                  className="text-sm font-normal tracking-wide text-black"
+                >
+                  Hits Different
+                </Link>
+                <Link
+                  href="/#task-input"
+                  className="text-sm font-normal tracking-wide text-black hover:opacity-70"
+                >
+                  Get started
+                </Link>
+              </nav>
+            </header>
+            <div
+              id="session"
+              className="relative z-[1] flex min-h-0 w-full flex-1 flex-col"
             >
-              Hits Different
-            </Link>
-            <Link
-              href="/#task-input"
-              className="text-sm font-normal tracking-wide text-black hover:opacity-70"
-            >
-              Get started
-            </Link>
-          </nav>
-        </header>
-        <div
-          id="session"
-          className="relative z-[1] mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col"
-        >
-          {children}
+              {children}
+            </div>
+          </div>
         </div>
       </body>
     </html>
