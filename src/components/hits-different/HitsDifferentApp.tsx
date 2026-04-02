@@ -5,17 +5,23 @@ import { cn } from '@/lib/cn'
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
+  type MutableRefObject,
+  type ReactNode,
 } from 'react'
 import { useUser } from '@/context/UserContext'
+import { useSpotifyPlaybackNotice } from '@/hooks/useSpotifyPlaybackNotice'
+import { HdWordmark } from '@/components/hits-different/HdWordmark'
+import { TickerColumn } from '@/components/hits-different/HitsDifferentTicker'
+import { TimerStageRings } from '@/components/hits-different/TimerStageRings'
 import {
   drawFallbackCoverCanvas,
   drawGeneratedCoverCanvas,
   overlayCoverText,
   type ParsedCover,
 } from '@/lib/hits-different/canvas'
+import { triggerBlobDownload } from '@/lib/hits-different/downloadBlob'
 import {
   BREAK_OPTS,
   CHARS,
@@ -25,13 +31,18 @@ import {
   SESSION_OPTS,
   type CharDef,
   type HistoryEntry,
-  TICKER_ITEMS,
   type Vibe,
   VIBES,
   VIBE_SAMPLE_PLAYLISTS,
   VIBE_TRACKS,
   youtubeMusicSearchUrlFor,
 } from '@/lib/hits-different/data'
+import {
+  HD_STAGE_FOOTER_LABEL,
+  HD_TIMER_STAGE_COLUMN,
+  HD_TOP_BAR_BTN,
+  hdMainGridShellClass,
+} from '@/lib/hits-different/hdUiClasses'
 
 function fmt(totalSeconds: number) {
   const m = Math.floor(totalSeconds / 60)
@@ -39,31 +50,30 @@ function fmt(totalSeconds: number) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-function TickerTrack({ id }: { id: string }) {
-  const items = useMemo(() => {
-    const quad = [...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS]
-    return quad.map((t, i) => (
-      <span
-        key={`${id}-${i}`}
-        className={
-          t.startsWith('APPROACH') || t.startsWith('WITH')
-            ? 'font-bold text-white/[0.72]'
-            : undefined
-        }
-      >
-        {t}
-      </span>
-    ))
-  }, [id])
+const SAMPLE_MIX_LINK_CLS =
+  'font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/55 underline decoration-white/25 underline-offset-2 transition-colors hover:text-white hover:decoration-white/50'
+
+function StreamMixAnchors({
+  spotifyUrl,
+  ytUrl,
+}: {
+  spotifyUrl: string
+  ytUrl: string
+}) {
   return (
-    <div className="z-10 flex flex-col overflow-hidden pointer-events-none">
-      <div
-        className="flex flex-col animate-[hd-tick_22s_linear_infinite] text-center font-[family-name:var(--font-space-mono)] text-[10.5px] leading-[2.1] text-white/20 whitespace-nowrap"
-        id={id}
+    <>
+      <a
+        href={spotifyUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={SAMPLE_MIX_LINK_CLS}
       >
-        {items}
-      </div>
-    </div>
+        Spotify
+      </a>
+      <a href={ytUrl} target="_blank" rel="noopener noreferrer" className={SAMPLE_MIX_LINK_CLS}>
+        YouTube Music
+      </a>
+    </>
   )
 }
 
@@ -78,28 +88,57 @@ function SampleMixLinks({
   const sample = VIBE_SAMPLE_PLAYLISTS[v]
   if (!sample) return null
   const yt = youtubeMusicSearchUrlFor(v)
-  const linkCls =
-    'font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/55 underline decoration-white/25 underline-offset-2 transition-colors hover:text-white hover:decoration-white/50'
+  const anchors = (
+    <StreamMixAnchors spotifyUrl={sample.spotifyUrl} ytUrl={yt} />
+  )
   if (compact) {
     return (
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/10 pt-2">
-        <a href={sample.spotifyUrl} target="_blank" rel="noopener noreferrer" className={linkCls}>
-          Spotify
-        </a>
-        <a href={yt} target="_blank" rel="noopener noreferrer" className={linkCls}>
-          YouTube Music
-        </a>
+        {anchors}
       </div>
     )
   }
+  return <div className="mt-3.5 flex flex-wrap gap-x-3 gap-y-1">{anchors}</div>
+}
+
+const TIMER_SELECT_LABEL_CLS =
+  'font-[family-name:var(--font-space-mono)] text-[9px] uppercase tracking-wide text-white/55'
+const TIMER_SELECT_CLS =
+  'max-w-[120px] cursor-pointer rounded border border-white/20 bg-black/50 py-1 pl-2 pr-7 font-[family-name:var(--font-space-mono)] text-[11px] text-white outline-none focus:border-white/50'
+
+function TimerSelectRow({
+  id,
+  label,
+  value,
+  onChange,
+  marginBottom,
+  children,
+}: {
+  id: string
+  label: string
+  value: number
+  onChange: (n: number) => void
+  marginBottom?: boolean
+  children: ReactNode
+}) {
   return (
-    <div className="mt-3.5 flex flex-wrap gap-x-3 gap-y-1">
-      <a href={sample.spotifyUrl} target="_blank" rel="noopener noreferrer" className={linkCls}>
-        Spotify
-      </a>
-      <a href={yt} target="_blank" rel="noopener noreferrer" className={linkCls}>
-        YouTube Music
-      </a>
+    <div
+      className={cn(
+        'flex items-center justify-between gap-2',
+        marginBottom && 'mb-2.5',
+      )}
+    >
+      <label htmlFor={id} className={TIMER_SELECT_LABEL_CLS}>
+        {label}
+      </label>
+      <select
+        id={id}
+        className={TIMER_SELECT_CLS}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+      >
+        {children}
+      </select>
     </div>
   )
 }
@@ -128,6 +167,69 @@ function DotsRow({
       ))}
     </div>
   )
+}
+
+/**
+ * One tick of the pomodoro interval: decrement seconds, or clear the interval and
+ * schedule the next block / finish. Extracted so `beginBlock` stays flat and this
+ * logic is testable by inspection.
+ */
+function nextRemainingAfterSecond(
+  r: number,
+  sessionNum: number,
+  totalSessions: number,
+  intervalRef: MutableRefObject<number | null>,
+  beginBlock: (n: number) => void,
+  finish: (n: number) => void,
+): number {
+  if (r > 1) return r - 1
+
+  if (intervalRef.current) {
+    clearInterval(intervalRef.current)
+    intervalRef.current = null
+  }
+  if (sessionNum < totalSessions) {
+    window.setTimeout(() => beginBlock(sessionNum + 1), 0)
+  } else {
+    window.setTimeout(() => finish(sessionNum), 0)
+  }
+  return 0
+}
+
+/**
+ * Decode a generated cover data URL and draw it onto the session canvas when ready.
+ * Intentionally not `async`: the timer must start in the same macrotask as `launch`
+ * (see `setTimeout` there), not after the image finishes loading.
+ */
+const DEMO_LOOP_VOL = 0.32
+
+function playDemoFocusIntro(
+  focusEl: HTMLAudioElement | null,
+  breakEl: HTMLAudioElement | null,
+): void {
+  if (!focusEl || !breakEl) return
+  breakEl.pause()
+  focusEl.volume = DEMO_LOOP_VOL
+  void focusEl.play().catch(() => {})
+}
+
+function queueGeneratedCoverPaint(
+  dataUrl: string,
+  canvasRef: MutableRefObject<HTMLCanvasElement | null>,
+  setS2CanvasMode: (on: boolean) => void,
+): void {
+  const img = new Image()
+  img.onload = () => {
+    const c = canvasRef.current
+    if (!c) return
+    const ctx = c.getContext('2d')
+    if (!ctx) return
+    c.width = 200
+    c.height = 200
+    ctx.drawImage(img, 0, 0, 200, 200)
+    setS2CanvasMode(true)
+  }
+  img.src = dataUrl
 }
 
 export default function HitsDifferentApp() {
@@ -178,36 +280,7 @@ export default function HitsDifferentApp() {
   const demoFocusAudioRef = useRef<HTMLAudioElement>(null)
   const demoBreakAudioRef = useRef<HTMLAudioElement>(null)
 
-  const [spotifyPlaybackNotice, setSpotifyPlaybackNotice] = useState<
-    null | 'nonPremium' | 'error'
-  >(null)
-
-  useEffect(() => {
-    if (status !== 'authenticated') {
-      setSpotifyPlaybackNotice(null)
-      return
-    }
-    let cancelled = false
-    void (async () => {
-      try {
-        const r = await fetch('/api/spotify/account')
-        if (!r.ok) {
-          if (!cancelled) setSpotifyPlaybackNotice('error')
-          return
-        }
-        const j = (await r.json()) as { product?: string }
-        if (cancelled) return
-        const p = j.product?.toLowerCase()
-        if (p === 'premium') setSpotifyPlaybackNotice(null)
-        else setSpotifyPlaybackNotice('nonPremium')
-      } catch {
-        if (!cancelled) setSpotifyPlaybackNotice('error')
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [status])
+  const spotifyPlaybackNotice = useSpotifyPlaybackNotice(status)
 
   useEffect(() => {
     try {
@@ -287,21 +360,16 @@ export default function HitsDifferentApp() {
 
       intervalRef.current = window.setInterval(() => {
         if (pausedRef.current) return
-        setRemaining((r) => {
-          if (r <= 1) {
-            if (intervalRef.current) {
-              clearInterval(intervalRef.current)
-              intervalRef.current = null
-            }
-            if (sessionNum < totalSessions) {
-              window.setTimeout(() => beginBlock(sessionNum + 1), 0)
-            } else {
-              window.setTimeout(() => finish(sessionNum), 0)
-            }
-            return 0
-          }
-          return r - 1
-        })
+        setRemaining((r) =>
+          nextRemainingAfterSecond(
+            r,
+            sessionNum,
+            totalSessions,
+            intervalRef,
+            beginBlock,
+            finish,
+          ),
+        )
       }, 1000)
     },
     [breakMins, clearTimer, finish, focusMins, totalSessions],
@@ -326,29 +394,16 @@ export default function HitsDifferentApp() {
     setView('session')
 
     if (!isSignedIn) {
-      const fo = demoFocusAudioRef.current
-      const br = demoBreakAudioRef.current
-      if (fo && br) {
-        br.pause()
-        fo.volume = 0.32
-        void fo.play().catch(() => {})
-      }
+      playDemoFocusIntro(demoFocusAudioRef.current, demoBreakAudioRef.current)
     }
 
     window.setTimeout(() => {
       if (generatedCoverDataURL && s2CanvasRef.current) {
-        const img = new Image()
-        img.onload = () => {
-          const c = s2CanvasRef.current
-          if (!c) return
-          const ctx = c.getContext('2d')
-          if (!ctx) return
-          c.width = 200
-          c.height = 200
-          ctx.drawImage(img, 0, 0, 200, 200)
-          setS2CanvasMode(true)
-        }
-        img.src = generatedCoverDataURL
+        queueGeneratedCoverPaint(
+          generatedCoverDataURL,
+          s2CanvasRef,
+          setS2CanvasMode,
+        )
       } else {
         setS2CanvasMode(false)
       }
@@ -378,6 +433,10 @@ export default function HitsDifferentApp() {
   const generateAICover = useCallback(async () => {
     const task = taskInput.trim() || taskText || 'focus session'
     const char = selectedChar ? selectedChar.name.replace('\n', ' ') : 'focused worker'
+    const applyCoverUrls = (url: string) => {
+      setGeneratedCoverDataURL(url)
+      setS1CoverImg(url)
+    }
     setAiBusy(true)
     try {
       const res = await fetch('/api/ai-cover', {
@@ -394,13 +453,10 @@ export default function HitsDifferentApp() {
         throw new Error(data.error || 'failed')
       }
       const url = drawGeneratedCoverCanvas(data.parsed, selectedVibe)
-      setGeneratedCoverDataURL(url)
-      setS1CoverImg(url)
+      applyCoverUrls(url)
       showToast('Album cover generated ✓')
     } catch {
-      const url = drawFallbackCoverCanvas(task, selectedVibe, selectedChar)
-      setGeneratedCoverDataURL(url)
-      setS1CoverImg(url)
+      applyCoverUrls(drawFallbackCoverCanvas(task, selectedVibe, selectedChar))
       showToast('Using vibe cover (add ANTHROPIC_API_KEY for AI)')
     } finally {
       setAiBusy(false)
@@ -419,12 +475,7 @@ export default function HitsDifferentApp() {
       )
     })
     const blob = new Blob([rows.join('\n')], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'hits-different-sessions.csv'
-    a.click()
-    URL.revokeObjectURL(url)
+    triggerBlobDownload(blob, 'hits-different-sessions.csv')
     showToast('Session log exported ✓')
   }, [sessionHistory, showToast])
 
@@ -449,12 +500,7 @@ export default function HitsDifferentApp() {
       overlayCoverText(ctx, taskText, selectedVibe)
       canvas.toBlob((blob) => {
         if (!blob) return
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = 'hits-different-cover.png'
-        a.click()
-        URL.revokeObjectURL(url)
+        triggerBlobDownload(blob, 'hits-different-cover.png')
         showToast('Album cover saved ✓')
       })
     }
@@ -495,15 +541,14 @@ export default function HitsDifferentApp() {
     }
 
     const wantBreak = timerMode === 'BREAK'
-    const vol = 0.32
 
     if (wantBreak) {
       focusEl.pause()
-      breakEl.volume = vol
+      breakEl.volume = DEMO_LOOP_VOL
       void breakEl.play().catch(() => {})
     } else {
       breakEl.pause()
-      focusEl.volume = vol
+      focusEl.volume = DEMO_LOOP_VOL
       void focusEl.play().catch(() => {})
     }
   }, [view, timerMode, paused, doneOpen, isSignedIn])
@@ -512,7 +557,7 @@ export default function HitsDifferentApp() {
   const isDoneTint = doneOpen
 
   return (
-    <div className="box-border h-screen w-screen overflow-hidden bg-hd-bg font-sans text-white antialiased select-none">
+    <div className="box-border min-h-svh w-full max-w-[100vw] overflow-x-hidden bg-hd-bg font-sans text-white antialiased select-none lg:h-svh lg:overflow-hidden">
       <audio
         ref={demoFocusAudioRef}
         className="sr-only"
@@ -530,14 +575,14 @@ export default function HitsDifferentApp() {
         aria-hidden
       />
       <div
-        className="fixed right-[18px] top-4 z-[200] flex flex-col items-end gap-1.5"
+        className="fixed left-3 right-3 top-[max(1rem,env(safe-area-inset-top))] z-[200] flex flex-col items-end gap-1.5 sm:left-auto sm:right-[18px]"
         id="hdTopBar"
       >
-        <div className="flex items-center gap-3.5">
+        <div className="flex w-full flex-wrap items-center justify-end gap-x-3 gap-y-1 sm:w-auto sm:gap-3.5">
           {status === 'authenticated' ? (
             <button
               type="button"
-              className="cursor-pointer border-0 bg-transparent font-[family-name:var(--font-space-mono)] text-[11px] tracking-wide text-white"
+              className={HD_TOP_BAR_BTN}
               onClick={() => signOutUser()}
               title={user.email ?? ''}
             >
@@ -546,7 +591,7 @@ export default function HitsDifferentApp() {
           ) : (
             <button
               type="button"
-              className="cursor-pointer border-0 bg-transparent font-[family-name:var(--font-space-mono)] text-[11px] tracking-wide text-white"
+              className={HD_TOP_BAR_BTN}
               onClick={() => signInWithSpotify()}
             >
               CONNECT SPOTIFY
@@ -554,7 +599,7 @@ export default function HitsDifferentApp() {
           )}
           <button
             type="button"
-            className="cursor-pointer border-0 bg-transparent font-[family-name:var(--font-space-mono)] text-[11px] tracking-wide text-white"
+            className={HD_TOP_BAR_BTN}
             onClick={() => setHistoryOpen((o) => !o)}
           >
             HISTORY ☰
@@ -576,7 +621,7 @@ export default function HitsDifferentApp() {
       <div
         id="toast"
         className={cn(
-          'pointer-events-none fixed bottom-[30px] left-1/2 z-[300] -translate-x-1/2 rounded-sm bg-white px-[22px] py-2.5 font-[family-name:var(--font-space-mono)] text-[11px] tracking-wide text-hd-bg transition-all duration-300',
+          'pointer-events-none fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-[300] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-sm bg-white px-[22px] py-2.5 text-center font-[family-name:var(--font-space-mono)] text-[11px] tracking-wide text-hd-bg transition-all duration-300',
           toast.show ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0',
         )}
       >
@@ -586,7 +631,7 @@ export default function HitsDifferentApp() {
       <div
         id="historyPanel"
         className={cn(
-          'fixed bottom-0 right-0 top-0 z-[150] flex w-[340px] flex-col border-l border-white/10 bg-hd-panel font-sans transition-transform duration-[400ms] ease-[cubic-bezier(.4,0,.2,1)]',
+          'fixed bottom-0 right-0 top-0 z-[150] flex w-full max-w-[min(100vw,340px)] flex-col border-l border-white/10 bg-hd-panel font-sans transition-transform duration-[400ms] ease-[cubic-bezier(.4,0,.2,1)]',
           historyOpen ? 'translate-x-0' : 'translate-x-full',
         )}
       >
@@ -639,33 +684,17 @@ export default function HitsDifferentApp() {
       </div>
 
       {/* Setup */}
-      <div
-        id="s1"
-        className={cn(
-          'absolute inset-0 z-0 grid grid-cols-[1fr_160px_1fr]',
-          view === 'setup' ? 'opacity-100' : 'pointer-events-none opacity-0',
-        )}
-      >
+      <div id="s1" className={hdMainGridShellClass('setup', view)}>
         <div
-          className="relative z-[5] flex flex-col overflow-hidden bg-hd-gold p-5 transition-colors duration-500 sm:px-6"
+          className="relative z-[5] flex min-h-0 flex-1 flex-col overflow-hidden bg-hd-gold px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[4.5rem] transition-colors duration-500 sm:px-6 lg:min-h-0 lg:flex-none lg:pb-5 lg:pt-5"
           id="s1Left"
         >
           <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:w-0">
-            <div className="shrink-0">
-              <div
-                className="size-[11px] shrink-0 rounded-full bg-white"
-                aria-hidden
-              />
-              <div className="mt-1.5 shrink-0 font-[family-name:var(--font-bebas)] text-[clamp(52px,8.5vw,96px)] leading-[0.88] tracking-wide text-white">
-                HITS
-                <br />
-                DIFFERENT
-              </div>
-            </div>
+            <HdWordmark />
 
-            <div className="relative mt-5 w-[230px] shrink-0">
+            <div className="relative mt-5 w-full max-w-[230px] shrink-0">
               <div
-                className="relative z-[3] flex h-[200px] w-[200px] shrink-0 items-center justify-center overflow-hidden rounded bg-[#222] text-[58px] transition-transform duration-300"
+                className="relative z-[3] mx-auto flex aspect-square w-full max-w-[200px] shrink-0 items-center justify-center overflow-hidden rounded bg-[#222] text-[clamp(44px,12vw,58px)] transition-transform duration-300"
                 id="s1Cover"
               >
                 <div
@@ -693,7 +722,7 @@ export default function HitsDifferentApp() {
                   />
                 ) : null}
                 <span
-                  className="relative z-[2] text-[58px]"
+                  className="relative z-[2] text-[clamp(44px,12vw,58px)]"
                   id="s1Emoji"
                   style={{ display: s1CoverImg ? 'none' : 'block' }}
                 >
@@ -750,66 +779,44 @@ export default function HitsDifferentApp() {
                       role="dialog"
                       aria-label="Timer settings"
                     >
-                      <div className="mb-2.5 flex items-center justify-between gap-2">
-                        <label
-                          htmlFor="focusSelect"
-                          className="font-[family-name:var(--font-space-mono)] text-[9px] uppercase tracking-wide text-white/55"
-                        >
-                          Focus
-                        </label>
-                        <select
-                          id="focusSelect"
-                          className="max-w-[120px] cursor-pointer rounded border border-white/20 bg-black/50 py-1 pl-2 pr-7 font-[family-name:var(--font-space-mono)] text-[11px] text-white outline-none focus:border-white/50"
-                          value={focusMins}
-                          onChange={(e) => setFocusMins(Number(e.target.value))}
-                        >
-                          {DUR_OPTS.map((d) => (
-                            <option key={d} value={d}>
-                              {d} min
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="mb-2.5 flex items-center justify-between gap-2">
-                        <label
-                          htmlFor="breakSelect"
-                          className="font-[family-name:var(--font-space-mono)] text-[9px] uppercase tracking-wide text-white/55"
-                        >
-                          Break
-                        </label>
-                        <select
-                          id="breakSelect"
-                          className="max-w-[120px] cursor-pointer rounded border border-white/20 bg-black/50 py-1 pl-2 pr-7 font-[family-name:var(--font-space-mono)] text-[11px] text-white outline-none focus:border-white/50"
-                          value={breakMins}
-                          onChange={(e) => setBreakMins(Number(e.target.value))}
-                        >
-                          {BREAK_OPTS.map((d) => (
-                            <option key={d} value={d}>
-                              {d} min
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <label
-                          htmlFor="roundsSelect"
-                          className="font-[family-name:var(--font-space-mono)] text-[9px] uppercase tracking-wide text-white/55"
-                        >
-                          Rounds
-                        </label>
-                        <select
-                          id="roundsSelect"
-                          className="max-w-[120px] cursor-pointer rounded border border-white/20 bg-black/50 py-1 pl-2 pr-7 font-[family-name:var(--font-space-mono)] text-[11px] text-white outline-none focus:border-white/50"
-                          value={totalSessions}
-                          onChange={(e) => setTotalSessions(Number(e.target.value))}
-                        >
-                          {SESSION_OPTS.map((n) => (
-                            <option key={n} value={n}>
-                              {n}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      <TimerSelectRow
+                        id="focusSelect"
+                        label="Focus"
+                        value={focusMins}
+                        onChange={setFocusMins}
+                        marginBottom
+                      >
+                        {DUR_OPTS.map((d) => (
+                          <option key={d} value={d}>
+                            {d} min
+                          </option>
+                        ))}
+                      </TimerSelectRow>
+                      <TimerSelectRow
+                        id="breakSelect"
+                        label="Break"
+                        value={breakMins}
+                        onChange={setBreakMins}
+                        marginBottom
+                      >
+                        {BREAK_OPTS.map((d) => (
+                          <option key={d} value={d}>
+                            {d} min
+                          </option>
+                        ))}
+                      </TimerSelectRow>
+                      <TimerSelectRow
+                        id="roundsSelect"
+                        label="Rounds"
+                        value={totalSessions}
+                        onChange={setTotalSessions}
+                      >
+                        {SESSION_OPTS.map((n) => (
+                          <option key={n} value={n}>
+                            {n}
+                          </option>
+                        ))}
+                      </TimerSelectRow>
                     </div>
                   ) : null}
                 </div>
@@ -821,7 +828,10 @@ export default function HitsDifferentApp() {
                   CHOOSE YOUR ALTER EGO
                 </span>
               </div>
-              <div className="grid grid-cols-4 gap-[7px]" id="charGrid">
+              <div
+                className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-[7px]"
+                id="charGrid"
+              >
                 {CHARS.map((c) => (
                   <button
                     key={c.id}
@@ -896,17 +906,10 @@ export default function HitsDifferentApp() {
           </div>
         </div>
 
-        <TickerTrack id="ticker1" />
+        <TickerColumn tickerId="ticker1" />
 
-        <div className="relative flex flex-col items-center justify-center overflow-hidden bg-hd-bg">
-          <div
-            className="pointer-events-none absolute rounded-full border-[1.5px] border-white/[0.055]"
-            style={{ width: '210%', height: '210%', top: '-55%', left: '-55%' }}
-          />
-          <div
-            className="pointer-events-none absolute rounded-full border-[1.5px] border-white/[0.055]"
-            style={{ width: '150%', height: '150%', top: '-25%', left: '-25%' }}
-          />
+        <div className={HD_TIMER_STAGE_COLUMN}>
+          <TimerStageRings />
           <div className="relative z-[5] text-center">
             <div className="font-[family-name:var(--font-bebas)] text-[clamp(60px,9.5vw,92px)] leading-none tracking-[6px] text-white/10">
               {String(focusMins).padStart(2, '0')}:00
@@ -916,51 +919,32 @@ export default function HitsDifferentApp() {
             </div>
           </div>
           <DotsRow total={totalSessions} current={1} id="previewDots" />
-          <div
-            className="absolute bottom-[22px] left-1/2 z-[5] -translate-x-1/2 whitespace-nowrap font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/20"
-            id="previewLabel"
-          >
+          <div className={HD_STAGE_FOOTER_LABEL} id="previewLabel">
             {totalSessions} POMODORO SESSIONS
           </div>
         </div>
       </div>
 
       {/* Session */}
-      <div
-        id="s2"
-        className={cn(
-          'absolute inset-0 z-[1] grid grid-cols-[1fr_160px_1fr]',
-          view === 'session' ? 'opacity-100' : 'pointer-events-none opacity-0',
-        )}
-      >
+      <div id="s2" className={hdMainGridShellClass('session', view)}>
         <div
           className={cn(
-            'relative z-[5] flex flex-col overflow-hidden p-5 transition-colors duration-500 sm:px-6',
+            'relative z-[5] flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[4.5rem] transition-colors duration-500 sm:px-6 lg:min-h-0 lg:flex-none lg:overflow-hidden lg:pb-5 lg:pt-5',
             isBreakTint && 'bg-hd-break',
             isDoneTint && 'bg-hd-done',
             !isBreakTint && !isDoneTint && 'bg-hd-gold',
           )}
           id="s2Left"
         >
-          <div className="shrink-0">
-            <div
-              className="size-[11px] shrink-0 rounded-full bg-white"
-              aria-hidden
-            />
-            <div className="mt-1.5 shrink-0 font-[family-name:var(--font-bebas)] text-[clamp(52px,8.5vw,96px)] leading-[0.88] tracking-wide text-white">
-              HITS
-              <br />
-              DIFFERENT
-            </div>
-          </div>
+          <HdWordmark />
 
-          <div className="relative mt-5 w-[230px] shrink-0">
+          <div className="relative mt-5 w-full max-w-[230px] shrink-0">
             <div
-              className="relative z-[3] flex h-[200px] w-[200px] shrink-0 items-center justify-center overflow-hidden rounded bg-[#222] text-[58px] transition-transform duration-300"
+              className="relative z-[3] mx-auto flex aspect-square w-full max-w-[200px] shrink-0 items-center justify-center overflow-hidden rounded bg-[#222] text-[clamp(44px,12vw,58px)] transition-transform duration-300"
               id="s2Cover"
             >
               <span
-                className="relative z-[2] text-[58px]"
+                className="relative z-[2] text-[clamp(44px,12vw,58px)]"
                 id="s2Emoji"
                 style={{ display: s2CanvasMode ? 'none' : 'block' }}
               >
@@ -978,7 +962,7 @@ export default function HitsDifferentApp() {
             <div className={cn('hd-vinyl', s2VinylSpin && 'hd-vinyl-spin')} id="s2Vinyl" />
           </div>
 
-          <div className="mt-3 w-[230px] shrink-0">
+          <div className="mt-3 w-full max-w-[230px] shrink-0">
             <div className="mb-0.5 font-[family-name:var(--font-space-mono)] text-[9.5px] uppercase tracking-wide text-white/45">
               Task
             </div>
@@ -1030,17 +1014,17 @@ export default function HitsDifferentApp() {
             >
               {totalSessions} SESSIONS · {focusMins}MIN FOCUS · {selectedVibe}
             </div>
-            <div className="mt-5 flex gap-2.5">
+            <div className="mt-5 flex w-full max-w-[min(100%,20rem)] flex-col gap-2.5 sm:max-w-none sm:flex-row sm:justify-center">
               <button
                 type="button"
-                className="cursor-pointer rounded border-[1.5px] border-white/30 bg-transparent px-5 py-2 font-[family-name:var(--font-bebas)] text-lg tracking-wide text-white transition-colors hover:border-white"
+                className="cursor-pointer rounded border-[1.5px] border-white/30 bg-transparent px-5 py-2.5 font-[family-name:var(--font-bebas)] text-lg tracking-wide text-white transition-colors hover:border-white"
                 onClick={exportAlbumCover}
               >
                 ⬇ SAVE COVER
               </button>
               <button
                 type="button"
-                className="cursor-pointer rounded border-0 bg-white px-5 py-2 font-[family-name:var(--font-bebas)] text-lg tracking-wide text-hd-bg transition-colors hover:bg-zinc-200"
+                className="cursor-pointer rounded border-0 bg-white px-5 py-2.5 font-[family-name:var(--font-bebas)] text-lg tracking-wide text-hd-bg transition-colors hover:bg-zinc-200"
                 onClick={restartSession}
               >
                 NEW SESSION →
@@ -1049,17 +1033,10 @@ export default function HitsDifferentApp() {
           </div>
         </div>
 
-        <TickerTrack id="ticker2" />
+        <TickerColumn tickerId="ticker2" />
 
-        <div className="relative flex flex-col items-center justify-center overflow-hidden bg-hd-bg" id="s2Right">
-          <div
-            className="pointer-events-none absolute rounded-full border-[1.5px] border-white/[0.055]"
-            style={{ width: '210%', height: '210%', top: '-55%', left: '-55%' }}
-          />
-          <div
-            className="pointer-events-none absolute rounded-full border-[1.5px] border-white/[0.055]"
-            style={{ width: '150%', height: '150%', top: '-25%', left: '-25%' }}
-          />
+        <div className={HD_TIMER_STAGE_COLUMN} id="s2Right">
+          <TimerStageRings />
           <div className="relative z-[5] text-center">
             <div className="font-[family-name:var(--font-bebas)] text-[clamp(60px,9.5vw,92px)] leading-none tracking-[6px] text-white" id="timerNum">
               {view === 'session' ? fmt(remaining) : `${String(focusMins).padStart(2, '0')}:00`}
@@ -1094,10 +1071,7 @@ export default function HitsDifferentApp() {
               {paused ? '▶ RESUME' : '⏸ PAUSE'}
             </button>
           </div>
-          <div
-            className="absolute bottom-[22px] left-1/2 z-[5] -translate-x-1/2 whitespace-nowrap font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/20"
-            id="sessLabel"
-          >
+          <div className={HD_STAGE_FOOTER_LABEL} id="sessLabel">
             SESSION {curSession} OF {totalSessions}
           </div>
         </div>

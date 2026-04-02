@@ -13,7 +13,21 @@
 @layer base {
   html,
   body {
-    @apply m-0 h-svh overflow-hidden p-0;
+    @apply m-0 min-h-svh p-0;
+  }
+
+  @media (max-width: 1023px) {
+    html,
+    body {
+      @apply h-auto overflow-x-hidden overflow-y-auto;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    html,
+    body {
+      @apply h-svh overflow-hidden;
+    }
   }
 }
 
@@ -91,5 +105,19 @@
 
   .hd-ai-spinner {
     animation: hd-spin 0.8s linear infinite;
+  }
+
+  @media (max-width: 1023px) {
+    .hd-vinyl {
+      width: 140px;
+      height: 140px;
+      right: -28px;
+      top: 6px;
+    }
+
+    .hd-vinyl::after {
+      width: 26px;
+      height: 26px;
+    }
   }
 }
