@@ -1,101 +1,95 @@
 @import 'tailwindcss';
 
+/* Hits Different palette + animations (Tailwind v4 @theme) */
 @theme {
-  --font-mono: ui-monospace, 'Cambria', Consolas, monospace;
+  --color-hd-gold: #c8a020;
+  --color-hd-bg: #0c0c0c;
+  --color-hd-panel: #111111;
+  --color-hd-break: #1a3040;
+  --color-hd-done: #1a0a2a;
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
+  html,
   body {
-    font-family: var(--font-inter), system-ui, sans-serif;
-    @apply m-0 min-h-svh bg-pink-50 text-[17px] leading-relaxed tracking-normal text-zinc-900 antialiased;
+    @apply m-0 h-svh overflow-hidden p-0;
   }
 }
 
-@keyframes quota-swipe-down {
+@keyframes hd-tick {
   from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
     transform: translateY(0);
   }
-}
-
-.quota-swipe-down {
-  animation: quota-swipe-down 360ms ease both;
-}
-
-@keyframes landing-rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
   to {
-    opacity: 1;
-    transform: translateY(0);
+    transform: translateY(-50%);
   }
 }
 
-.landing-rise {
-  animation: landing-rise 0.55s ease both;
-}
-
-.landing-rise-1 {
-  animation-delay: 0ms;
-}
-
-.landing-rise-2 {
-  animation-delay: 70ms;
-}
-
-.landing-rise-3 {
-  animation-delay: 140ms;
-}
-
-.landing-rise-4 {
-  animation-delay: 210ms;
-}
-
-.landing-rise-5 {
-  animation-delay: 280ms;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .landing-rise {
-    animation: none;
-    opacity: 1;
-    transform: none;
+@keyframes hd-vinyl {
+  to {
+    transform: rotate(360deg);
   }
 }
 
-/* Hero + memo (Inter) */
-.hero-memo {
-  font-family: var(--font-inter), system-ui, sans-serif;
-  margin-bottom: 0.75rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  color: rgb(113 113 122);
+@keyframes hd-bar {
+  0% {
+    height: 2px;
+  }
+  100% {
+    height: 11px;
+  }
 }
 
-.hero-title {
-  font-family: var(--font-inter), system-ui, sans-serif;
-  font-weight: 700;
-  font-size: clamp(2.75rem, 14vw, 128px);
-  line-height: 0.92;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: rgb(0 0 0);
+@keyframes hd-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.hero-title-task {
-  font-family: var(--font-inter), system-ui, sans-serif;
-  font-weight: 700;
-  font-size: clamp(2.5rem, 11vw, 5.5rem);
-  line-height: 1.02;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: rgb(0 0 0);
+/* Vinyl record: gradient too long for inline utilities */
+@layer components {
+  .hd-vinyl {
+    position: absolute;
+    right: -46px;
+    top: 9px;
+    z-index: 1;
+    width: 182px;
+    height: 182px;
+    border-radius: 9999px;
+    pointer-events: none;
+    box-shadow: 3px 3px 18px rgba(0, 0, 0, 0.65);
+    background: radial-gradient(
+      circle,
+      #2a2a2a 0%,
+      #2a2a2a 17%,
+      #0c0c0c 19%,
+      #1a1a1a 20%,
+      #0c0c0c 38%,
+      #1a1a1a 40%,
+      #0c0c0c 58%,
+      #1a1a1a 60%,
+      #0c0c0c 80%
+    );
+  }
+
+  .hd-vinyl::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 34px;
+    height: 34px;
+    transform: translate(-50%, -50%);
+    border-radius: 9999px;
+    background: radial-gradient(circle, #ff69b4 0%, #e91e8c 50%, #0c0c0c 52%);
+  }
+
+  .hd-vinyl-spin {
+    animation: hd-vinyl 2.8s linear infinite;
+  }
+
+  .hd-ai-spinner {
+    animation: hd-spin 0.8s linear infinite;
+  }
 }

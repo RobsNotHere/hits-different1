@@ -1,5 +1,5 @@
-import { PomodoroApp } from '@/components/PomodoroApp'
+import HitsDifferentApp from '@/components/hits-different/HitsDifferentApp'
 
 export default function Home() {
-  return <PomodoroApp />
+  return <HitsDifferentApp />
 }
