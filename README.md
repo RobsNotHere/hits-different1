@@ -45,6 +45,8 @@ Signing in with a **free** Spotify account still works for profile-based flows; 
    | `SPOTIFY_CLIENT_SECRET` | For Spotify login | Same app as above |
    | `ANTHROPIC_API_KEY` | No | Enables server-side “AI album cover” generation; without it, the app falls back to a vibe-based cover |
 
+   **Secrets in the browser:** Never define API keys or `AUTH_SECRET` with a `NEXT_PUBLIC_` prefix. Next.js inlines those into client JavaScript, so they can appear in Chrome DevTools. This app reads `ANTHROPIC_API_KEY` only on the server (`/api/ai-cover`). On **Vercel**, use the name `ANTHROPIC_API_KEY` only (value = the key, no `NAME=` prefix). If a key ever showed up under Sources/Console, remove any `NEXT_PUBLIC_` copy in Vercel and **rotate** the key.
+
 4. **Spotify redirect URI** — In your Spotify app settings, add:
 
    `http://localhost:3000/api/auth/callback/spotify`

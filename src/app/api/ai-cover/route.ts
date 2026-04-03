@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     return NextResponse.json(
-      { error: 'ANTHROPIC_API_KEY is not configured' },
+      { error: 'AI cover is not configured on the server' },
       { status: 503 },
     )
   }

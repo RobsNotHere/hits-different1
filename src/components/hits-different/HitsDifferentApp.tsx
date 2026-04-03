@@ -457,7 +457,7 @@ export default function HitsDifferentApp() {
       showToast('Album cover generated ✓')
     } catch {
       applyCoverUrls(drawFallbackCoverCanvas(task, selectedVibe, selectedChar))
-      showToast('Using vibe cover (add ANTHROPIC_API_KEY for AI)')
+      showToast('Using vibe cover — add AI key on the server for generated art')
     } finally {
       setAiBusy(false)
     }
