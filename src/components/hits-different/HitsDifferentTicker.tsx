@@ -1,14 +1,101 @@
 'use client'
 
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useSyncExternalStore,
+  type ReactNode,
 } from 'react'
 import { cn } from '@/lib/cn'
 import { VIBES, type Vibe } from '@/lib/hits-different/data'
+
+type TickerWheelRegistry = {
+  register: (fn: (deltaY: number) => void) => void
+  unregister: () => void
+}
+
+const TickerWheelRegistryContext = createContext<TickerWheelRegistry | null>(null)
+
+function nearestVerticalScrollAncestor(start: Element): HTMLElement | null {
+  let n: HTMLElement | null = start instanceof HTMLElement ? start : null
+  while (n) {
+    const st = window.getComputedStyle(n)
+    const oy = st.overflowY
+    if (
+      (oy === 'auto' || oy === 'scroll' || oy === 'overlay') &&
+      n.scrollHeight > n.clientHeight + 2
+    ) {
+      return n
+    }
+    n = n.parentElement
+  }
+  return null
+}
+
+function wheelWouldScrollVertically(scroller: HTMLElement, deltaY: number): boolean {
+  if (deltaY > 0) {
+    return scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 1
+  }
+  if (deltaY < 0) {
+    return scroller.scrollTop > 0
+  }
+  return false
+}
+
+/**
+ * Captures wheel events (desktop / trackpad) and forwards them to the active
+ * infinite vibe list, except over form fields, the session log drawer, timer
+ * settings popover, or a scrollable region that can still move natively.
+ */
+export function TickerWheelProvider({ children }: { children: ReactNode }) {
+  const applierRef = useRef<((deltaY: number) => void) | null>(null)
+
+  const register = useCallback((fn: (deltaY: number) => void) => {
+    applierRef.current = fn
+  }, [])
+
+  const unregister = useCallback(() => {
+    applierRef.current = null
+  }, [])
+
+  const registryValue = useMemo(
+    () => ({ register, unregister }),
+    [register, unregister],
+  )
+
+  useEffect(() => {
+    const onWheel = (e: WheelEvent) => {
+      if (!applierRef.current) return
+      const node = e.target
+      if (!(node instanceof Element)) return
+
+      if (node.closest('input, textarea, select, option, [contenteditable="true"]')) return
+      if (node.closest('#historyPanel')) return
+      if (node.closest('#timerSettingsPanel')) return
+      if (node.closest('#doneOverlay')) return
+
+      const scrollEl = nearestVerticalScrollAncestor(node)
+      if (scrollEl && wheelWouldScrollVertically(scrollEl, e.deltaY)) return
+
+      applierRef.current(e.deltaY)
+      e.preventDefault()
+    }
+
+    window.addEventListener('wheel', onWheel, { capture: true, passive: false })
+    return () => window.removeEventListener('wheel', onWheel, { capture: true })
+  }, [])
+
+  return (
+    <TickerWheelRegistryContext.Provider value={registryValue}>
+      {children}
+    </TickerWheelRegistryContext.Provider>
+  )
+}
 
 /** Which ticker column last picked the vibe + which clone row was clicked. */
 export type VibeHighlightSource = {
@@ -106,12 +193,13 @@ function WheelInfiniteVibeList({
   id,
   isVibeVisuallySelected,
   onPickVibe,
+  wheelForwardActive,
 }: {
   id: string
   isVibeVisuallySelected: (v: Vibe, duplicateIndex: number) => boolean
   onPickVibe: (v: Vibe, duplicateIndex: number) => void
+  wheelForwardActive: boolean
 }) {
-  const viewportRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLElement>(null)
   const segmentRef = useRef<HTMLDivElement>(null)
   /** Unbounded scroll target (wheel deltas accumulate here). */
@@ -119,6 +207,9 @@ function WheelInfiniteVibeList({
   /** Eased position; display uses `mod(anim, scrollPeriodPx)`. */
   const animScrollRef = useRef(0)
   const rafRef = useRef<number | null>(null)
+  const ensureRafRef = useRef<() => void>(() => {})
+
+  const wheelRegistry = useContext(TickerWheelRegistryContext)
 
   useLayoutEffect(() => {
     const seg = segmentRef.current
@@ -131,9 +222,6 @@ function WheelInfiniteVibeList({
   }, [])
 
   useEffect(() => {
-    const vp = viewportRef.current
-    if (!vp) return
-
     const applyDisplay = () => {
       const seg = segmentRef.current
       const track = trackRef.current
@@ -175,28 +263,31 @@ function WheelInfiniteVibeList({
       rafRef.current = requestAnimationFrame(runFrame)
     }
 
-    const onWheel = (e: WheelEvent) => {
-      const seg = segmentRef.current
-      const track = trackRef.current
-      if (!seg || !track) return
-      if (scrollPeriodPx(seg, track) <= 0) return
+    ensureRafRef.current = ensureRaf
 
-      e.preventDefault()
-      e.stopPropagation()
-
-      targetScrollRef.current += e.deltaY
-      ensureRaf()
-    }
-
-    vp.addEventListener('wheel', onWheel, { passive: false })
     return () => {
-      vp.removeEventListener('wheel', onWheel)
       if (rafRef.current != null) {
         cancelAnimationFrame(rafRef.current)
         rafRef.current = null
       }
     }
   }, [])
+
+  useEffect(() => {
+    if (!wheelForwardActive || !wheelRegistry) return
+
+    const applyWheelDelta = (deltaY: number) => {
+      const seg = segmentRef.current
+      const track = trackRef.current
+      if (!seg || !track) return
+      if (scrollPeriodPx(seg, track) <= 0) return
+      targetScrollRef.current += deltaY
+      ensureRafRef.current()
+    }
+
+    wheelRegistry.register(applyWheelDelta)
+    return () => wheelRegistry.unregister()
+  }, [wheelForwardActive, wheelRegistry])
 
   useEffect(() => {
     const seg = segmentRef.current
@@ -227,10 +318,7 @@ function WheelInfiniteVibeList({
   }, [])
 
   return (
-    <div
-      ref={viewportRef}
-      className="flex min-h-0 flex-1 flex-col overflow-hidden px-1"
-    >
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-1">
       <nav
         ref={trackRef}
         id={id}
@@ -295,11 +383,14 @@ export function TickerColumn({
   selectedVibe,
   vibeHighlight,
   onVibePick,
+  wheelForwardActive = false,
 }: {
   tickerId: string
   selectedVibe: string
   vibeHighlight: VibeHighlightSource
   onVibePick: (tickerId: string, vibe: Vibe, duplicateIndex: number) => void
+  /** When true (and motion is not reduced), wheel anywhere on the page drives this column’s vibe list. */
+  wheelForwardActive?: boolean
 }) {
   const reduceMotion = usePrefersReducedMotion()
 
@@ -333,6 +424,7 @@ export function TickerColumn({
           id={tickerId}
           isVibeVisuallySelected={isVibeVisuallySelected}
           onPickVibe={pick}
+          wheelForwardActive={wheelForwardActive}
         />
       )}
     </div>

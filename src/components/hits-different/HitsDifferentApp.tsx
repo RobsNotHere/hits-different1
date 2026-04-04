@@ -15,6 +15,7 @@ import { SpotifyWebPlayer } from '@/components/hits-different/SpotifyWebPlayer'
 import { HdWordmark } from '@/components/hits-different/HdWordmark'
 import {
   TickerColumn,
+  TickerWheelProvider,
   type VibeHighlightSource,
 } from '@/components/hits-different/HitsDifferentTicker'
 import { TimerStageRings } from '@/components/hits-different/TimerStageRings'
@@ -606,6 +607,7 @@ export default function HitsDifferentApp() {
   const isDoneTint = doneOpen
 
   return (
+    <TickerWheelProvider>
     <div className="box-border min-h-svh w-full max-w-[100vw] overflow-x-hidden bg-hd-bg font-sans text-white antialiased select-none lg:h-svh lg:overflow-hidden">
       <audio
         ref={demoFocusAudioRef}
@@ -628,7 +630,7 @@ export default function HitsDifferentApp() {
         id="hdTopBar"
       >
         <div className="flex w-full min-w-0 flex-nowrap items-baseline justify-between gap-x-3 gap-y-1">
-          <HdWordmark variant="nav" onNavClick={() => setSetupLeftAbout(false)} />
+          <HdWordmark onNavClick={() => setSetupLeftAbout(false)} />
           <div className="flex min-w-0 shrink-0 flex-nowrap items-baseline justify-end gap-x-3 sm:gap-3.5">
             {view === 'setup' ? (
               <button
@@ -813,8 +815,16 @@ export default function HitsDifferentApp() {
                       className="absolute right-0 bottom-[calc(100%+6px)] z-[60] w-[min(calc(100vw-2.5rem),220px)] rounded border border-white/15 bg-[#141414] p-3 text-left shadow-[0_-12px_40px_rgba(0,0,0,0.55)]"
                       id="timerSettingsPanel"
                       role="dialog"
-                      aria-label="Timer settings"
+                      aria-modal="true"
+                      aria-labelledby="timerSettingsTitle"
+                      aria-describedby="timerSettingsDesc"
                     >
+                      <h2 id="timerSettingsTitle" className="sr-only">
+                        Timer settings
+                      </h2>
+                      <p id="timerSettingsDesc" className="sr-only">
+                        Set focus length, break length, and number of pomodoro rounds before you start.
+                      </p>
                       <TimerSelectRow
                         id="focusSelect"
                         label="Focus"
@@ -877,6 +887,7 @@ export default function HitsDifferentApp() {
           selectedVibe={selectedVibe}
           vibeHighlight={vibeHighlight}
           onVibePick={handleVibePick}
+          wheelForwardActive={view === 'setup'}
         />
 
         <div className={HD_TIMER_STAGE_COLUMN}>
@@ -1020,6 +1031,7 @@ export default function HitsDifferentApp() {
           selectedVibe={selectedVibe}
           vibeHighlight={vibeHighlight}
           onVibePick={handleVibePick}
+          wheelForwardActive={view === 'session'}
         />
 
         <div className={HD_TIMER_STAGE_COLUMN} id="s2Right">
@@ -1064,5 +1076,6 @@ export default function HitsDifferentApp() {
         </div>
       </div>
     </div>
+    </TickerWheelProvider>
   )
 }

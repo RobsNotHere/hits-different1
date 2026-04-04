@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react'
 
-export type SpotifyPlaybackNotice = 'nonPremium' | 'error' | null
+type SpotifyPlaybackNotice = 'nonPremium' | 'error' | null
 
-export type SpotifyPlaybackNoticeState = {
+type SpotifyPlaybackNoticeState = {
   notice: SpotifyPlaybackNotice
   /** True after `/api/spotify/account` finished for this authenticated session (success or error). */
   accountVerified: boolean
