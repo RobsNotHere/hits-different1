@@ -103,7 +103,7 @@ function SampleMixLinks({
 const TIMER_SELECT_LABEL_CLS =
   'font-[family-name:var(--font-space-mono)] text-[9px] uppercase tracking-wide text-white/55'
 const TIMER_SELECT_CLS =
-  'max-w-[120px] cursor-pointer rounded border border-white/20 bg-black/50 py-1 pl-2 pr-7 font-[family-name:var(--font-space-mono)] text-[11px] text-white outline-none focus:border-white/50'
+  'max-w-[120px] w-[120px] cursor-pointer appearance-none rounded border border-white/20 bg-black/50 py-1 pl-2 pr-7 font-[family-name:var(--font-space-mono)] text-[11px] text-white outline-none focus:border-white/50'
 
 function TimerSelectRow({
   id,
@@ -120,6 +120,37 @@ function TimerSelectRow({
   marginBottom?: boolean
   children: ReactNode
 }) {
+  const [listOpen, setListOpen] = useState(false)
+  const blurCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const clearBlurCloseTimer = () => {
+    if (blurCloseTimerRef.current !== null) {
+      clearTimeout(blurCloseTimerRef.current)
+      blurCloseTimerRef.current = null
+    }
+  }
+
+  useEffect(() => () => clearBlurCloseTimer(), [])
+
+  const openList = () => {
+    clearBlurCloseTimer()
+    setListOpen(true)
+  }
+
+  /** Native `<select>` often stays focused when the list closes on a second click; toggle here so the chevron resets. */
+  const handleSelectMouseDown = () => {
+    clearBlurCloseTimer()
+    setListOpen((prev) => (prev ? false : true))
+  }
+
+  const scheduleCloseList = () => {
+    clearBlurCloseTimer()
+    blurCloseTimerRef.current = setTimeout(() => {
+      setListOpen(false)
+      blurCloseTimerRef.current = null
+    }, 280)
+  }
+
   return (
     <div
       className={cn(
@@ -130,14 +161,32 @@ function TimerSelectRow({
       <label htmlFor={id} className={TIMER_SELECT_LABEL_CLS}>
         {label}
       </label>
-      <select
-        id={id}
-        className={TIMER_SELECT_CLS}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-      >
-        {children}
-      </select>
+      <div className="relative shrink-0">
+        <select
+          id={id}
+          className={TIMER_SELECT_CLS}
+          value={value}
+          onMouseDown={handleSelectMouseDown}
+          onFocus={openList}
+          onBlur={scheduleCloseList}
+          onChange={(e) => {
+            clearBlurCloseTimer()
+            setListOpen(false)
+            onChange(Number(e.target.value))
+          }}
+        >
+          {children}
+        </select>
+        <span
+          className={cn(
+            'pointer-events-none absolute right-2 top-1/2 block -translate-y-1/2 text-[8px] leading-none text-white/40 transition-transform duration-200 ease-out',
+            !listOpen && 'rotate-180',
+          )}
+          aria-hidden
+        >
+          ▼
+        </span>
+      </div>
     </div>
   )
 }
@@ -831,7 +880,7 @@ export default function HitsDifferentApp() {
                   </button>
                   {timerSettingsOpen ? (
                     <div
-                      className="absolute right-0 top-[calc(100%+6px)] z-[60] w-[min(calc(100vw-2.5rem),220px)] rounded border border-white/15 bg-[#141414] p-3 shadow-[0_12px_40px_rgba(0,0,0,0.55)]"
+                      className="absolute right-0 bottom-[calc(100%+6px)] z-[60] w-[min(calc(100vw-2.5rem),220px)] rounded border border-white/15 bg-[#141414] p-3 shadow-[0_-12px_40px_rgba(0,0,0,0.55)]"
                       id="timerSettingsPanel"
                       role="dialog"
                       aria-label="Timer settings"
