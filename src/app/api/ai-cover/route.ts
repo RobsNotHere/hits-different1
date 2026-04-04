@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-type Body = { task: string; vibe: string; char: string }
+type Body = { task: string; vibe: string }
 
 export async function POST(req: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY
@@ -20,10 +20,9 @@ export async function POST(req: Request) {
 
   const task = (body.task || 'focus session').slice(0, 500)
   const vibe = (body.vibe || 'LO-FI').slice(0, 40)
-  const char = (body.char || 'focused worker').slice(0, 200)
 
   const prompt = `You are a creative album cover art director. Generate a vivid, detailed description for an album cover for someone working on: "${task}".
-Their music vibe is ${vibe} and their character archetype is ${char}.
+Their music vibe is ${vibe}.
 Then draw it as ASCII art using block characters and unicode symbols that fills a roughly 12x12 grid of text.
 Respond ONLY with JSON: {"description": "...", "palette": ["#hexcolor1","#hexcolor2","#hexcolor3"], "ascii": "multiline ascii art here", "title": "short album title"}`
 

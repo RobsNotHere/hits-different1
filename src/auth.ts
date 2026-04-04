@@ -1,5 +1,7 @@
 import NextAuth from 'next-auth'
 import Spotify from 'next-auth/providers/spotify'
+import type { JWT } from 'next-auth/jwt'
+import { refreshSpotifyAccessToken } from '@/lib/spotify/refreshSpotifyAccessToken'
 
 /** Dev-only fallback so `/api/auth/session` works without `.env.local` (set AUTH_SECRET for stable local + prod). */
 const authSecret =
@@ -26,25 +28,46 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             'user-read-currently-playing',
             'user-read-playback-state',
             'playlist-read-private',
+            'streaming',
+            'user-modify-playback-state',
           ].join(' '),
         },
       },
     }),
   ],
   callbacks: {
-    jwt({ token, account }) {
+    async jwt({ token, account }): Promise<JWT> {
       if (account?.access_token) {
-        token.accessToken = account.access_token
+        return {
+          ...token,
+          accessToken: account.access_token,
+          refreshToken: account.refresh_token,
+          expiresAt: account.expires_at ?? Math.floor(Date.now() / 1000 + 3600),
+          error: undefined,
+        }
       }
-      if (account?.refresh_token) {
-        token.refreshToken = account.refresh_token
+
+      if (token.error === 'RefreshAccessTokenError') {
+        return token
       }
-      if (account?.expires_at) {
-        token.expiresAt = account.expires_at
+
+      const exp = token.expiresAt as number | undefined
+      const nowSec = Math.floor(Date.now() / 1000)
+      if (exp && nowSec < exp - 120) {
+        return token
       }
-      return token
+
+      if (!token.refreshToken) {
+        return { ...token, error: 'RefreshAccessTokenError' }
+      }
+
+      return refreshSpotifyAccessToken(token)
     },
     session({ session, token }) {
+      if (token.error === 'RefreshAccessTokenError') {
+        session.accessToken = undefined
+        return session
+      }
       session.accessToken = token.accessToken as string | undefined
       return session
     },

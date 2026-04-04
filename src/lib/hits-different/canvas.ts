@@ -1,5 +1,3 @@
-import type { CharDef } from './data'
-
 export type ParsedCover = {
   palette?: string[]
   ascii?: string
@@ -59,11 +57,7 @@ const VIBE_COLORS: Record<string, [string, string]> = {
   ACOUSTIC: ['#4e342e', '#a5d6a7'],
 }
 
-export function drawFallbackCoverCanvas(
-  task: string,
-  vibe: string,
-  selectedChar: CharDef | null,
-): string {
+export function drawFallbackCoverCanvas(task: string, vibe: string): string {
   const canvas = document.createElement('canvas')
   canvas.width = 400
   canvas.height = 400
@@ -79,7 +73,7 @@ export function drawFallbackCoverCanvas(
   ctx.font = '120px serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText(selectedChar ? selectedChar.emoji : '🎵', 200, 180)
+  ctx.fillText('🎵', 200, 180)
   ctx.font = 'bold 22px "Arial Narrow",Arial,sans-serif'
   ctx.fillStyle = '#fff'
   ctx.fillText(task.slice(0, 22).toUpperCase(), 200, 320)

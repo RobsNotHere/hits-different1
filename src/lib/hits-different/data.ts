@@ -1,21 +1,3 @@
-export type CharDef = {
-  id: string
-  emoji: string
-  name: string
-  vibe: string
-}
-
-export const CHARS: CharDef[] = [
-  { id: 'lo', emoji: '🧘', name: 'Lo-Fi\nChill', vibe: 'LO-FI' },
-  { id: 'run', emoji: '🏃', name: 'Sprint\nMode', vibe: 'HYPE' },
-  { id: 'cat', emoji: '🐱', name: 'Cat\nNap', vibe: 'JAZZ' },
-  { id: 'cyb', emoji: '🤖', name: 'Cyber\nFocus', vibe: 'EDM' },
-  { id: 'art', emoji: '🎨', name: 'Art\nBlock', vibe: 'INDIE' },
-  { id: 'nrd', emoji: '🤓', name: 'Deep\nWork', vibe: 'CLASSICAL' },
-  { id: 'pnk', emoji: '💀', name: 'Punk\nHour', vibe: 'PUNK' },
-  { id: 'coz', emoji: '☕', name: 'Cozy\nGrind', vibe: 'ACOUSTIC' },
-]
-
 export const VIBES = [
   'LO-FI',
   'HYPE',
@@ -85,17 +67,6 @@ export function youtubeMusicSearchUrlFor(vibe: Vibe): string {
   const q = VIBE_SAMPLE_PLAYLISTS[vibe].youtubeMusicSearchQuery
   return `https://music.youtube.com/search?q=${encodeURIComponent(q)}`
 }
-
-export const TICKER_ITEMS = [
-  'Make your own',
-  'album cover',
-  'Connect to Spotify',
-  'and Youtube',
-  'Set your',
-  'pomodoro timer',
-  'APPROACH FOCUS',
-  'WITH CHARACTERS',
-]
 
 export const DUR_OPTS = [15, 20, 25, 30, 45, 60]
 

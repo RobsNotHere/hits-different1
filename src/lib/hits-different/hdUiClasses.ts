@@ -1,8 +1,8 @@
 import { cn } from '@/lib/cn'
 
-/** Top bar: Spotify / History text buttons */
+/** Top bar: Spotify / History text buttons (same row, shared baseline) */
 export const HD_TOP_BAR_BTN =
-  'cursor-pointer border-0 bg-transparent font-[family-name:var(--font-space-mono)] text-[11px] tracking-wide text-white'
+  'cursor-pointer border-0 bg-transparent p-0 font-[family-name:var(--font-space-mono)] text-[11px] leading-none tracking-wide text-white whitespace-nowrap'
 
 /** Right column: preview + live timer stage (shared shell). */
 export const HD_TIMER_STAGE_COLUMN =

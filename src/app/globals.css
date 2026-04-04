@@ -31,15 +31,6 @@
   }
 }
 
-@keyframes hd-tick {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-50%);
-  }
-}
-
 @keyframes hd-vinyl {
   to {
     transform: rotate(360deg);

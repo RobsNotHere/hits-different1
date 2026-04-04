@@ -23,7 +23,7 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: 'Hits Different — Pomodoro',
   description:
-    'Pomodoro sessions with character, vibe, and optional Spotify connection.',
+    'Pomodoro sessions with vibe mixes and optional Spotify connection.',
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
   },

@@ -12,8 +12,12 @@ import {
 } from 'react'
 import { useUser } from '@/context/UserContext'
 import { useSpotifyPlaybackNotice } from '@/hooks/useSpotifyPlaybackNotice'
+import { SpotifyWebPlayer } from '@/components/hits-different/SpotifyWebPlayer'
 import { HdWordmark } from '@/components/hits-different/HdWordmark'
-import { TickerColumn } from '@/components/hits-different/HitsDifferentTicker'
+import {
+  TickerColumn,
+  type VibeHighlightSource,
+} from '@/components/hits-different/HitsDifferentTicker'
 import { TimerStageRings } from '@/components/hits-different/TimerStageRings'
 import {
   drawFallbackCoverCanvas,
@@ -24,19 +28,17 @@ import {
 import { triggerBlobDownload } from '@/lib/hits-different/downloadBlob'
 import {
   BREAK_OPTS,
-  CHARS,
   DUR_OPTS,
   HISTORY_KEY,
   SESSION_DEMO_AUDIO,
   SESSION_OPTS,
-  type CharDef,
   type HistoryEntry,
   type Vibe,
-  VIBES,
   VIBE_SAMPLE_PLAYLISTS,
   VIBE_TRACKS,
   youtubeMusicSearchUrlFor,
 } from '@/lib/hits-different/data'
+import { spotifyPlaylistContextUri } from '@/lib/hits-different/spotifyPlaylistUri'
 import {
   HD_STAGE_FOOTER_LABEL,
   HD_TIMER_STAGE_COLUMN,
@@ -56,9 +58,11 @@ const SAMPLE_MIX_LINK_CLS =
 function StreamMixAnchors({
   spotifyUrl,
   ytUrl,
+  browserPlay,
 }: {
   spotifyUrl: string
   ytUrl: string
+  browserPlay?: ReactNode
 }) {
   return (
     <>
@@ -70,6 +74,7 @@ function StreamMixAnchors({
       >
         Spotify
       </a>
+      {browserPlay}
       <a href={ytUrl} target="_blank" rel="noopener noreferrer" className={SAMPLE_MIX_LINK_CLS}>
         YouTube Music
       </a>
@@ -79,26 +84,20 @@ function StreamMixAnchors({
 
 function SampleMixLinks({
   vibe,
-  compact,
+  browserPlay,
 }: {
   vibe: string
-  compact?: boolean
+  browserPlay?: ReactNode
 }) {
   const v = vibe as Vibe
   const sample = VIBE_SAMPLE_PLAYLISTS[v]
   if (!sample) return null
   const yt = youtubeMusicSearchUrlFor(v)
-  const anchors = (
-    <StreamMixAnchors spotifyUrl={sample.spotifyUrl} ytUrl={yt} />
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/10 pt-2">
+      <StreamMixAnchors spotifyUrl={sample.spotifyUrl} ytUrl={yt} browserPlay={browserPlay} />
+    </div>
   )
-  if (compact) {
-    return (
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/10 pt-2">
-        {anchors}
-      </div>
-    )
-  }
-  return <div className="mt-3.5 flex flex-wrap gap-x-3 gap-y-1">{anchors}</div>
 }
 
 const TIMER_SELECT_LABEL_CLS =
@@ -236,8 +235,11 @@ export default function HitsDifferentApp() {
   const { user, isSignedIn, status, signInWithSpotify, signOutUser } = useUser()
 
   const [view, setView] = useState<'setup' | 'session'>('setup')
-  const [selectedChar, setSelectedChar] = useState<CharDef | null>(null)
   const [selectedVibe, setSelectedVibe] = useState('LO-FI')
+  const [vibeHighlight, setVibeHighlight] = useState<VibeHighlightSource>({
+    tickerId: 'ticker1',
+    duplicateIndex: 0,
+  })
   const [taskInput, setTaskInput] = useState('')
   const [taskText, setTaskText] = useState('')
   const [focusMins, setFocusMins] = useState(25)
@@ -249,19 +251,33 @@ export default function HitsDifferentApp() {
   const [timerMode, setTimerMode] = useState('FOCUS')
   const [paused, setPaused] = useState(false)
   const pausedRef = useRef(false)
+  /** Timer was auto-paused because in-browser Spotify started playing; cleared on manual pause or session end. */
+  const spotifyDrovePauseRef = useRef(false)
+  const browserSpotifyPlayingRef = useRef(false)
   const intervalRef = useRef<number | null>(null)
 
   const taskTextRef = useRef('')
-  const selectedCharRef = useRef<CharDef | null>(null)
   const selectedVibeRef = useRef('LO-FI')
   const focusMinsRef = useRef(25)
 
   useEffect(() => {
     taskTextRef.current = taskText
-    selectedCharRef.current = selectedChar
     selectedVibeRef.current = selectedVibe
     focusMinsRef.current = focusMins
-  }, [taskText, selectedChar, selectedVibe, focusMins])
+  }, [taskText, selectedVibe, focusMins])
+
+  const handleVibePick = useCallback(
+    (tickerId: string, v: Vibe, duplicateIndex: number) => {
+      setSelectedVibe(v)
+      setVibeHighlight({ tickerId, duplicateIndex })
+    },
+    [],
+  )
+
+  /** Option B highlight: snap to first clone when switching setup ↔ session. */
+  useEffect(() => {
+    setVibeHighlight({ tickerId: 'ticker1', duplicateIndex: 0 })
+  }, [view])
 
   const [sessionHistory, setSessionHistory] = useState<HistoryEntry[]>([])
   const [historyOpen, setHistoryOpen] = useState(false)
@@ -280,7 +296,33 @@ export default function HitsDifferentApp() {
   const demoFocusAudioRef = useRef<HTMLAudioElement>(null)
   const demoBreakAudioRef = useRef<HTMLAudioElement>(null)
 
-  const spotifyPlaybackNotice = useSpotifyPlaybackNotice(status)
+  const { notice: spotifyPlaybackNotice, accountVerified: spotifyAccountVerified } =
+    useSpotifyPlaybackNotice(status)
+
+  const viewRef = useRef(view)
+  const doneOpenRef = useRef(doneOpen)
+  useEffect(() => {
+    viewRef.current = view
+    doneOpenRef.current = doneOpen
+  }, [view, doneOpen])
+
+  const handleBrowserSpotifyPlaying = useCallback((playing: boolean) => {
+    browserSpotifyPlayingRef.current = playing
+    if (viewRef.current !== 'session' || doneOpenRef.current) return
+    if (playing) {
+      if (!pausedRef.current) {
+        spotifyDrovePauseRef.current = true
+        pausedRef.current = true
+        setPaused(true)
+        setS2VinylSpin(true)
+      }
+    } else if (spotifyDrovePauseRef.current) {
+      spotifyDrovePauseRef.current = false
+      pausedRef.current = false
+      setPaused(false)
+      setS2VinylSpin(true)
+    }
+  }, [])
 
   useEffect(() => {
     try {
@@ -313,6 +355,8 @@ export default function HitsDifferentApp() {
     window.setTimeout(() => setToast((t) => ({ ...t, show: false })), dur)
   }, [])
 
+  const onSpotifyWebError = useCallback((msg: string) => showToast(msg), [showToast])
+
   const clearTimer = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
@@ -325,9 +369,11 @@ export default function HitsDifferentApp() {
     setS2VinylSpin(false)
     setPaused(false)
     pausedRef.current = false
+    spotifyDrovePauseRef.current = false
+    browserSpotifyPlayingRef.current = false
     const entry: HistoryEntry = {
       task: taskTextRef.current,
-      emoji: selectedCharRef.current?.emoji ?? '🎵',
+      emoji: '🎵',
       vibe: selectedVibeRef.current,
       sessions: completedSessionNum,
       duration: focusMinsRef.current,
@@ -371,6 +417,13 @@ export default function HitsDifferentApp() {
           ),
         )
       }, 1000)
+
+      if (browserSpotifyPlayingRef.current) {
+        spotifyDrovePauseRef.current = true
+        pausedRef.current = true
+        setPaused(true)
+        setS2VinylSpin(true)
+      }
     },
     [breakMins, clearTimer, finish, focusMins, totalSessions],
   )
@@ -378,6 +431,7 @@ export default function HitsDifferentApp() {
   useEffect(() => () => clearTimer(), [clearTimer])
 
   const togglePause = useCallback(() => {
+    spotifyDrovePauseRef.current = false
     const nextPaused = !pausedRef.current
     pausedRef.current = nextPaused
     setPaused(nextPaused)
@@ -418,6 +472,8 @@ export default function HitsDifferentApp() {
     demoBreakAudioRef.current?.pause()
     setPaused(false)
     pausedRef.current = false
+    spotifyDrovePauseRef.current = false
+    browserSpotifyPlayingRef.current = false
     setView('setup')
     setTaskInput('')
     taskTextRef.current = ''
@@ -432,7 +488,6 @@ export default function HitsDifferentApp() {
 
   const generateAICover = useCallback(async () => {
     const task = taskInput.trim() || taskText || 'focus session'
-    const char = selectedChar ? selectedChar.name.replace('\n', ' ') : 'focused worker'
     const applyCoverUrls = (url: string) => {
       setGeneratedCoverDataURL(url)
       setS1CoverImg(url)
@@ -442,7 +497,7 @@ export default function HitsDifferentApp() {
       const res = await fetch('/api/ai-cover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task, vibe: selectedVibe, char }),
+        body: JSON.stringify({ task, vibe: selectedVibe }),
       })
       const data = (await res.json()) as {
         ok?: boolean
@@ -456,12 +511,12 @@ export default function HitsDifferentApp() {
       applyCoverUrls(url)
       showToast('Album cover generated ✓')
     } catch {
-      applyCoverUrls(drawFallbackCoverCanvas(task, selectedVibe, selectedChar))
+      applyCoverUrls(drawFallbackCoverCanvas(task, selectedVibe))
       showToast('Using vibe cover — add AI key on the server for generated art')
     } finally {
       setAiBusy(false)
     }
-  }, [selectedChar, selectedVibe, showToast, taskInput, taskText])
+  }, [selectedVibe, showToast, taskInput, taskText])
 
   const exportHistory = useCallback(() => {
     if (!sessionHistory.length) {
@@ -495,7 +550,7 @@ export default function HitsDifferentApp() {
         ctx.font = '320px serif'
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
-        ctx.fillText(selectedChar?.emoji ?? '🎵', 500, 500)
+        ctx.fillText('🎵', 500, 500)
       }
       overlayCoverText(ctx, taskText, selectedVibe)
       canvas.toBlob((blob) => {
@@ -512,7 +567,7 @@ export default function HitsDifferentApp() {
     } else {
       draw(null)
     }
-  }, [generatedCoverDataURL, selectedChar, selectedVibe, showToast, taskText])
+  }, [generatedCoverDataURL, selectedVibe, showToast, taskText])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -578,9 +633,10 @@ export default function HitsDifferentApp() {
         className="fixed left-3 right-3 top-[max(1rem,env(safe-area-inset-top))] z-[200] flex flex-col items-end gap-1.5 sm:left-auto sm:right-[18px]"
         id="hdTopBar"
       >
-        <div className="flex w-full flex-wrap items-center justify-end gap-x-3 gap-y-1 sm:w-auto sm:gap-3.5">
+        <div className="flex w-full flex-nowrap items-baseline justify-end gap-x-3 sm:w-auto sm:gap-3.5">
           {status === 'authenticated' ? (
             <button
+              id="hdSpotifyNav"
               type="button"
               className={HD_TOP_BAR_BTN}
               onClick={() => signOutUser()}
@@ -590,6 +646,7 @@ export default function HitsDifferentApp() {
             </button>
           ) : (
             <button
+              id="hdSpotifyNav"
               type="button"
               className={HD_TOP_BAR_BTN}
               onClick={() => signInWithSpotify()}
@@ -726,7 +783,7 @@ export default function HitsDifferentApp() {
                   id="s1Emoji"
                   style={{ display: s1CoverImg ? 'none' : 'block' }}
                 >
-                  {selectedChar?.emoji ?? '🎵'}
+                  🎵
                 </span>
               </div>
               <div
@@ -822,74 +879,6 @@ export default function HitsDifferentApp() {
                 </div>
               </div>
 
-              <div className="mb-1.5 mt-3.5 flex items-center gap-2 font-[family-name:var(--font-space-mono)] text-[10px] uppercase tracking-wide text-white/50">
-                Character
-                <span className="text-[8px] font-normal normal-case tracking-wide text-white/35">
-                  CHOOSE YOUR ALTER EGO
-                </span>
-              </div>
-              <div
-                className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-[7px]"
-                id="charGrid"
-              >
-                {CHARS.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    className={cn(
-                      'relative flex cursor-pointer flex-col items-center gap-0.5 rounded border-[1.5px] border-white/15 bg-black/20 p-1.5 text-center transition-colors hover:border-white/40 hover:bg-black/30',
-                      selectedChar?.id === c.id &&
-                        'border-white bg-white/15 text-white',
-                    )}
-                    onClick={() => {
-                      setSelectedChar(c)
-                      setSelectedVibe(c.vibe)
-                      setGeneratedCoverDataURL(null)
-                      setS1CoverImg(null)
-                    }}
-                  >
-                    <div className="text-xl leading-none">{c.emoji}</div>
-                    <div
-                      className={cn(
-                        'text-center font-[family-name:var(--font-space-mono)] text-[7.5px] leading-tight text-white/55',
-                        selectedChar?.id === c.id && 'text-white',
-                      )}
-                      dangerouslySetInnerHTML={{ __html: c.name.replaceAll('\n', '<br />') }}
-                    />
-                    <div
-                      className={cn(
-                        'absolute right-1 top-0.5 text-[7px] text-white',
-                        selectedChar?.id === c.id ? 'block' : 'hidden',
-                      )}
-                    >
-                      ✓
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              <div className="mb-1.5 mt-3.5 font-[family-name:var(--font-space-mono)] text-[10px] uppercase tracking-wide text-white/50">
-                Music vibe
-              </div>
-              <div className="flex flex-wrap gap-1.5" id="vibeRow">
-                {VIBES.map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    className={cn(
-                      'cursor-pointer rounded-full border-[1.5px] border-white/20 bg-black/20 px-2.5 py-0.5 font-[family-name:var(--font-space-mono)] text-[9.5px] tracking-wide text-white/50 transition-all hover:border-white/40 hover:text-white',
-                      v === selectedVibe &&
-                        'border-white bg-white/15 font-bold text-white',
-                    )}
-                    onClick={() => setSelectedVibe(v)}
-                  >
-                    {v}
-                  </button>
-                ))}
-              </div>
-
-              <SampleMixLinks vibe={selectedVibe} />
-
               <button
                 type="button"
                 className={cn(
@@ -906,7 +895,12 @@ export default function HitsDifferentApp() {
           </div>
         </div>
 
-        <TickerColumn tickerId="ticker1" />
+        <TickerColumn
+          tickerId="ticker1"
+          selectedVibe={selectedVibe}
+          vibeHighlight={vibeHighlight}
+          onVibePick={handleVibePick}
+        />
 
         <div className={HD_TIMER_STAGE_COLUMN}>
           <TimerStageRings />
@@ -948,7 +942,7 @@ export default function HitsDifferentApp() {
                 id="s2Emoji"
                 style={{ display: s2CanvasMode ? 'none' : 'block' }}
               >
-                {selectedChar?.emoji ?? '🎵'}
+                🎵
               </span>
               <canvas
                 ref={s2CanvasRef}
@@ -990,7 +984,23 @@ export default function HitsDifferentApp() {
                   : VIBE_TRACKS[selectedVibe] ?? `${selectedVibe} MIX`}
               </div>
             </div>
-            <SampleMixLinks vibe={selectedVibe} compact />
+            <SampleMixLinks
+              vibe={selectedVibe}
+              browserPlay={
+                isSignedIn &&
+                spotifyAccountVerified &&
+                spotifyPlaybackNotice === null ? (
+                  <SpotifyWebPlayer
+                    enabled={view === 'session' && !doneOpen}
+                    contextUri={spotifyPlaylistContextUri(
+                      VIBE_SAMPLE_PLAYLISTS[selectedVibe as Vibe].spotifyUrl,
+                    )}
+                    onSdkPlayingChange={handleBrowserSpotifyPlaying}
+                    onError={onSpotifyWebError}
+                  />
+                ) : undefined
+              }
+            />
           </div>
 
           <div
@@ -1003,7 +1013,7 @@ export default function HitsDifferentApp() {
             id="doneOverlay"
           >
             <div className="text-[52px]" id="doneEmoji">
-              {selectedChar?.emoji ?? '🎵'}
+              🎵
             </div>
             <div className="font-[family-name:var(--font-bebas)] text-[58px] tracking-wide text-white">
               TRACK DONE
@@ -1033,7 +1043,12 @@ export default function HitsDifferentApp() {
           </div>
         </div>
 
-        <TickerColumn tickerId="ticker2" />
+        <TickerColumn
+          tickerId="ticker2"
+          selectedVibe={selectedVibe}
+          vibeHighlight={vibeHighlight}
+          onVibePick={handleVibePick}
+        />
 
         <div className={HD_TIMER_STAGE_COLUMN} id="s2Right">
           <TimerStageRings />

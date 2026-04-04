@@ -1,12 +1,11 @@
-import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
+import { getSpotifyAccessToken } from '@/lib/spotify/getSpotifyAccessToken'
 
 /**
  * Returns the signed-in user's Spotify `product` (e.g. premium, free) for client UX.
  */
 export async function GET() {
-  const session = await auth()
-  const token = session?.accessToken
+  const token = await getSpotifyAccessToken()
   if (!token) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
