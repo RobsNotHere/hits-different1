@@ -42,11 +42,21 @@ export async function POST(req: Request) {
     body: JSON.stringify({ context_uri: contextUri }),
   })
 
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[hits-different] Spotify PUT /me/player/play →', res.status)
+  }
+
   if (res.status === 204 || res.ok) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[hits-different] /api/spotify/player/play → client:', { ok: true })
+    }
     return NextResponse.json({ ok: true })
   }
 
   const detail = await res.text()
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[hits-different] Spotify play error:', detail.slice(0, 500))
+  }
   return NextResponse.json(
     { error: 'Spotify play failed', detail },
     { status: res.status },

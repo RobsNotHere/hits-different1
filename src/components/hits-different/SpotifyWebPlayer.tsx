@@ -92,6 +92,20 @@ export function SpotifyWebPlayer({
           getOAuthToken: (cb) => {
             void fetch('/api/spotify/token')
               .then((r) => {
+                if (process.env.NODE_ENV === 'development') {
+                  void r
+                    .clone()
+                    .json()
+                    .then((body: { accessToken?: string; error?: string }) => {
+                      console.log('[hits-different] GET /api/spotify/token', r.status, {
+                        hasAccessToken: Boolean(body.accessToken),
+                        error: body.error,
+                      })
+                    })
+                    .catch(() => {
+                      console.log('[hits-different] GET /api/spotify/token', r.status, '(non-JSON body)')
+                    })
+                }
                 if (!r.ok) throw new Error('token')
                 return r.json()
               })
@@ -146,6 +160,18 @@ export function SpotifyWebPlayer({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ deviceId, contextUri }),
       })
+      if (process.env.NODE_ENV === 'development') {
+        const peek = await res.clone().text()
+        try {
+          console.log(
+            '[hits-different] POST /api/spotify/player/play',
+            res.status,
+            peek ? JSON.parse(peek) : '(empty)',
+          )
+        } catch {
+          console.log('[hits-different] POST /api/spotify/player/play', res.status, peek.slice(0, 400))
+        }
+      }
       if (!res.ok) {
         const j = (await res.json().catch(() => ({}))) as { detail?: string; error?: string }
         throw new Error(j.detail || j.error || res.statusText)

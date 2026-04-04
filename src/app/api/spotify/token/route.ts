@@ -7,5 +7,8 @@ export async function GET() {
   if (!accessToken) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[hits-different] /api/spotify/token → client: { accessToken: <redacted> }')
+  }
   return NextResponse.json({ accessToken })
 }

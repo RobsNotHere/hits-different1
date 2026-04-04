@@ -35,10 +35,17 @@ export function useSpotifyPlaybackNotice(
       try {
         const r = await fetch('/api/spotify/account')
         if (!r.ok) {
+          if (process.env.NODE_ENV === 'development') {
+            const errBody = await r.clone().text()
+            console.log('[hits-different] GET /api/spotify/account', r.status, errBody.slice(0, 300))
+          }
           if (!cancelled) setFetchedNotice('error')
           return
         }
         const j = (await r.json()) as { product?: string }
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[hits-different] GET /api/spotify/account', r.status, j)
+        }
         if (cancelled) return
         const p = j.product?.toLowerCase()
         if (p === 'premium') setFetchedNotice(null)
