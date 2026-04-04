@@ -6,11 +6,14 @@ export const HD_TOP_BAR_BTN =
 
 /** Right column: preview + live timer stage (shared shell). */
 export const HD_TIMER_STAGE_COLUMN =
-  'relative flex min-h-[38svh] flex-1 flex-col items-center justify-center overflow-hidden bg-hd-bg pb-[max(1rem,env(safe-area-inset-bottom))] lg:min-h-0 lg:flex-none lg:pb-0'
+  'relative flex min-h-[38svh] min-w-0 flex-1 flex-col items-start justify-center overflow-hidden bg-hd-bg px-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 lg:min-h-0 lg:flex-none lg:pb-0'
+
+/** Vertical spacing between album, labels, and inputs (setup + session left columns). */
+export const HD_COLUMN_STACK_GAP = 'gap-4'
 
 /** Bottom caption under dots on timer stage columns. */
 export const HD_STAGE_FOOTER_LABEL =
-  'absolute bottom-[22px] left-1/2 z-[5] -translate-x-1/2 whitespace-nowrap font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/20'
+  'absolute bottom-[22px] left-4 z-[5] whitespace-nowrap font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/20 sm:left-6'
 
 export function hdMainGridShellClass(
   mode: 'setup' | 'session',
@@ -19,7 +22,7 @@ export function hdMainGridShellClass(
   const active = view === mode
   return cn(
     mode === 'setup' ? 'z-0' : 'z-[1]',
-    'flex flex-col lg:absolute lg:inset-0 lg:grid lg:min-h-0 lg:grid-cols-[1fr_160px_1fr]',
+    'flex flex-col lg:absolute lg:inset-0 lg:grid lg:min-h-0 lg:grid-cols-[5fr_1fr_4fr]',
     active
       ? 'opacity-100'
       : 'pointer-events-none opacity-0 max-lg:hidden lg:pointer-events-none',

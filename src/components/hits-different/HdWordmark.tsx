@@ -1,15 +1,23 @@
-export function HdWordmark() {
+import { cn } from '@/lib/cn'
+
+type HdWordmarkProps = {
+  /** Compact two-line mark aligned with top-bar nav copy (`11px` mono). */
+  variant?: 'default' | 'nav'
+}
+
+export function HdWordmark({ variant = 'default' }: HdWordmarkProps) {
   return (
-    <div className="shrink-0">
-      <div
-        className="size-[11px] shrink-0 rounded-full bg-white"
-        aria-hidden
-      />
-      <div className="mt-1.5 shrink-0 font-[family-name:var(--font-bebas)] text-[clamp(52px,8.5vw,96px)] leading-[0.88] tracking-wide text-white">
-        HITS
-        <br />
-        DIFFERENT
-      </div>
-    </div>
+    <p
+      className={cn(
+        'm-0 shrink-0 font-[family-name:var(--font-bebas)] uppercase leading-none tracking-wide text-white',
+        variant === 'nav'
+          ? 'text-[11px]'
+          : 'text-[clamp(1.35rem,4vw,2.125rem)] leading-[0.88]',
+      )}
+    >
+      Hits
+      <br />
+      Different
+    </p>
   )
 }

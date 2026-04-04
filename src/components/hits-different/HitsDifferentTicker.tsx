@@ -48,9 +48,9 @@ function VibeTickerButton({
       tabIndex={isGhost ? -1 : undefined}
       aria-hidden={isGhost ? true : undefined}
       className={cn(
-        'w-full cursor-pointer rounded border border-transparent px-1.5 py-1 text-center transition-colors hover:border-white/25 hover:text-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40',
+        'w-full cursor-pointer rounded border border-transparent px-1.5 py-1 text-start transition-colors hover:border-transparent hover:text-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40',
         visuallySelected
-          ? 'border-white/40 bg-white/10 font-bold text-white'
+          ? 'bg-white/10 font-bold text-white'
           : 'font-normal',
       )}
       onClick={() => onPickVibe(vibe, duplicateIndex)}
@@ -71,7 +71,7 @@ function StaticVibeList({
 }) {
   return (
     <nav
-      className="z-10 flex w-full min-w-0 flex-col gap-2 py-1 text-center font-[family-name:var(--font-space-mono)] text-[10px] leading-snug text-white/35"
+      className="z-10 flex w-full min-w-0 flex-col gap-2 py-1 text-start font-[family-name:var(--font-space-mono)] text-[10px] leading-snug text-white/35"
       id={id}
       aria-label="Music vibe"
     >
@@ -235,7 +235,7 @@ function WheelInfiniteVibeList({
         ref={trackRef}
         id={id}
         aria-label="Music vibe"
-        className="z-10 flex w-full min-w-0 flex-col gap-2 py-1 text-center font-[family-name:var(--font-space-mono)] text-[10px] leading-snug text-white/35 will-change-transform"
+        className="z-10 flex w-full min-w-0 flex-col gap-2 py-1 text-start font-[family-name:var(--font-space-mono)] text-[10px] leading-snug text-white/35 will-change-transform"
         style={{ transform: 'translateY(0)' }}
       >
         <div ref={segmentRef} className="flex flex-col gap-2">
@@ -319,7 +319,7 @@ export function TickerColumn({
   )
 
   return (
-    <div className="relative flex h-28 min-h-0 shrink-0 flex-col overflow-hidden border-y border-white/[0.06] bg-hd-bg lg:h-full lg:min-h-0 lg:w-[160px] lg:shrink-0 lg:border-x lg:border-y-0">
+    <div className="relative flex h-28 min-h-0 shrink-0 flex-col overflow-hidden border-y border-white/[0.06] bg-hd-bg lg:h-full lg:min-h-0 lg:min-w-0 lg:w-full lg:border-x lg:border-y-0">
       {reduceMotion ? (
         <div className={cn('flex min-h-0 flex-1 flex-col', SCROLLBAR_ROW)}>
           <StaticVibeList
