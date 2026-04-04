@@ -192,6 +192,39 @@ function TimerSelectRow({
   )
 }
 
+function SetupAboutLeftPanel({ onOpenHistory }: { onOpenHistory: () => void }) {
+  return (
+    <div className="flex min-h-full w-full flex-1 flex-col items-center justify-center px-1 py-2">
+      <div
+        className={cn(
+          'flex w-full max-w-[280px] flex-col items-start text-start',
+          HD_COLUMN_STACK_GAP,
+        )}
+      >
+        <h2 className="font-[family-name:var(--font-bebas)] text-[clamp(28px,5vw,40px)] leading-none tracking-wide text-white">
+          ABOUT
+        </h2>
+        <p className="font-[family-name:var(--font-space-mono)] text-[11px] leading-relaxed tracking-wide text-white/65">
+          Hits Different is a Pomodoro timer built around music vibes. Pick a mix, name your task, and run
+          focus rounds with optional in-browser Spotify when you connect your account.
+        </p>
+        <p className="font-[family-name:var(--font-space-mono)] text-[11px] leading-relaxed tracking-wide text-white/65">
+          <span className="text-white/85">Spotify Premium</span> is required for in-browser playback and for
+          reliable control through Spotify’s APIs. Free accounts may not be able to start or verify playback
+          the same way; you may also need the Spotify app open or an active device on your account.
+        </p>
+        <button
+          type="button"
+          className={cn(HD_TOP_BAR_BTN, 'text-left')}
+          onClick={onOpenHistory}
+        >
+          SESSION LOG →
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function DotsRow({
   total,
   current,
@@ -331,6 +364,8 @@ export default function HitsDifferentApp() {
 
   const [sessionHistory, setSessionHistory] = useState<HistoryEntry[]>([])
   const [historyOpen, setHistoryOpen] = useState(false)
+  /** Setup-only: replaces left column with About; ticker + timer unchanged. */
+  const [setupLeftAbout, setSetupLeftAbout] = useState(false)
   const [toast, setToast] = useState({ msg: '', show: false })
   const [doneOpen, setDoneOpen] = useState(false)
   const [s2VinylSpin, setS2VinylSpin] = useState(false)
@@ -495,6 +530,7 @@ export default function HitsDifferentApp() {
     launchInProgressRef.current = true
     taskTextRef.current = t
     setTaskText(t)
+    setSetupLeftAbout(false)
     setView('session')
 
     if (!isSignedIn) {
@@ -525,6 +561,7 @@ export default function HitsDifferentApp() {
     spotifyDrovePauseRef.current = false
     browserSpotifyPlayingRef.current = false
     setView('setup')
+    setSetupLeftAbout(false)
     setTaskInput('')
     taskTextRef.current = ''
     setTaskText('')
@@ -684,35 +721,37 @@ export default function HitsDifferentApp() {
         id="hdTopBar"
       >
         <div className="flex w-full min-w-0 flex-nowrap items-baseline justify-between gap-x-3 gap-y-1">
-          <HdWordmark variant="nav" />
+          <HdWordmark variant="nav" onNavClick={() => setSetupLeftAbout(false)} />
           <div className="flex min-w-0 shrink-0 flex-nowrap items-baseline justify-end gap-x-3 sm:gap-3.5">
-          {status === 'authenticated' ? (
-            <button
-              id="hdSpotifyNav"
-              type="button"
-              className={HD_TOP_BAR_BTN}
-              onClick={() => signOutUser()}
-              title={user.email ?? ''}
-            >
-              {user.name ?? 'Spotify'} · OUT
-            </button>
-          ) : (
-            <button
-              id="hdSpotifyNav"
-              type="button"
-              className={HD_TOP_BAR_BTN}
-              onClick={() => signInWithSpotify()}
-            >
-              CONNECT SPOTIFY
-            </button>
-          )}
-          <button
-            type="button"
-            className={HD_TOP_BAR_BTN}
-            onClick={() => setHistoryOpen((o) => !o)}
-          >
-            HISTORY ☰
-          </button>
+            {view === 'setup' ? (
+              <button
+                type="button"
+                className={HD_TOP_BAR_BTN}
+                onClick={() => setSetupLeftAbout(true)}
+              >
+                ABOUT
+              </button>
+            ) : null}
+            {status === 'authenticated' ? (
+              <button
+                id="hdSpotifyNav"
+                type="button"
+                className={HD_TOP_BAR_BTN}
+                onClick={() => signOutUser()}
+                title={user.email ?? ''}
+              >
+                {user.name ?? 'Spotify'} · OUT
+              </button>
+            ) : (
+              <button
+                id="hdSpotifyNav"
+                type="button"
+                className={HD_TOP_BAR_BTN}
+                onClick={() => signInWithSpotify()}
+              >
+                CONNECT SPOTIFY
+              </button>
+            )}
           </div>
         </div>
         {spotifyPlaybackNotice ? (
@@ -800,6 +839,9 @@ export default function HitsDifferentApp() {
           id="s1Left"
         >
           <div className="flex h-full min-h-0 flex-col overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:w-0">
+            {setupLeftAbout ? (
+              <SetupAboutLeftPanel onOpenHistory={() => setHistoryOpen(true)} />
+            ) : (
             <div className="flex min-h-full w-full flex-1 flex-col items-center justify-center px-1 py-2">
               <div
                 className={cn(
@@ -949,9 +991,17 @@ export default function HitsDifferentApp() {
               >
                 {aiBusy ? '✦ GENERATING…' : '✦ GENERATE AI ALBUM COVER'}
               </button>
+              <button
+                type="button"
+                className={cn(HD_TOP_BAR_BTN, 'pt-1 text-left')}
+                onClick={() => setHistoryOpen(true)}
+              >
+                SESSION LOG →
+              </button>
             </div>
               </div>
             </div>
+            )}
           </div>
         </div>
 

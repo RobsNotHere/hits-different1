@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
-import { Bebas_Neue, DM_Sans, Space_Mono } from 'next/font/google'
+import { Bebas_Neue, Inter, Space_Mono } from 'next/font/google'
 import { Providers } from '@/components/providers'
 import './globals.css'
 
-const dmSans = DM_Sans({
+const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-dm-sans',
+  variable: '--font-inter',
 })
 
 const bebasNeue = Bebas_Neue({
@@ -43,7 +43,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${dmSans.variable} ${bebasNeue.variable} ${spaceMono.variable} m-0 min-h-svh antialiased`}
+        className={`${inter.variable} ${bebasNeue.variable} ${spaceMono.variable} m-0 min-h-svh antialiased`}
       >
         <Providers>{children}</Providers>
       </body>

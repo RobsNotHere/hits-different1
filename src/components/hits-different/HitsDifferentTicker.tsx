@@ -319,7 +319,7 @@ export function TickerColumn({
   )
 
   return (
-    <div className="relative flex h-28 min-h-0 shrink-0 flex-col overflow-hidden border-y border-white/[0.06] bg-hd-bg lg:h-full lg:min-h-0 lg:min-w-0 lg:w-full lg:border-x lg:border-y-0">
+    <div className="relative flex h-24 min-h-0 shrink-0 flex-col overflow-hidden border-y border-white/[0.06] bg-hd-bg lg:h-full lg:min-h-0 lg:min-w-0 lg:w-full lg:border-x lg:border-y-0">
       {reduceMotion ? (
         <div className={cn('flex min-h-0 flex-1 flex-col', SCROLLBAR_ROW)}>
           <StaticVibeList

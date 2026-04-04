@@ -7,7 +7,7 @@
   --color-hd-panel: #111111;
   --color-hd-break: #1a3040;
   --color-hd-done: #1a0a2a;
-  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
