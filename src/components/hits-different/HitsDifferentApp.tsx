@@ -1,6 +1,5 @@
 'use client'
 
-import NextImage from 'next/image'
 import { cn } from '@/lib/cn'
 import {
   useCallback,
@@ -19,12 +18,7 @@ import {
   type VibeHighlightSource,
 } from '@/components/hits-different/HitsDifferentTicker'
 import { TimerStageRings } from '@/components/hits-different/TimerStageRings'
-import {
-  drawFallbackCoverCanvas,
-  drawGeneratedCoverCanvas,
-  overlayCoverText,
-  type ParsedCover,
-} from '@/lib/hits-different/canvas'
+import { overlayCoverText } from '@/lib/hits-different/canvas'
 import { triggerBlobDownload } from '@/lib/hits-different/downloadBlob'
 import {
   BREAK_OPTS,
@@ -278,11 +272,6 @@ function nextRemainingAfterSecond(
   return 0
 }
 
-/**
- * Decode a generated cover data URL and draw it onto the session canvas when ready.
- * Intentionally not `async`: the timer must start in the same macrotask as `launch`
- * (see `setTimeout` there), not after the image finishes loading.
- */
 const DEMO_LOOP_VOL = 0.32
 
 function playDemoFocusIntro(
@@ -293,25 +282,6 @@ function playDemoFocusIntro(
   breakEl.pause()
   focusEl.volume = DEMO_LOOP_VOL
   void focusEl.play().catch(() => {})
-}
-
-function queueGeneratedCoverPaint(
-  dataUrl: string,
-  canvasRef: MutableRefObject<HTMLCanvasElement | null>,
-  setS2CanvasMode: (on: boolean) => void,
-): void {
-  const img = new Image()
-  img.onload = () => {
-    const c = canvasRef.current
-    if (!c) return
-    const ctx = c.getContext('2d')
-    if (!ctx) return
-    c.width = 200
-    c.height = 200
-    ctx.drawImage(img, 0, 0, 200, 200)
-    setS2CanvasMode(true)
-  }
-  img.src = dataUrl
 }
 
 export default function HitsDifferentApp() {
@@ -369,12 +339,7 @@ export default function HitsDifferentApp() {
   const [toast, setToast] = useState({ msg: '', show: false })
   const [doneOpen, setDoneOpen] = useState(false)
   const [s2VinylSpin, setS2VinylSpin] = useState(false)
-  const [aiBusy, setAiBusy] = useState(false)
-  const [generatedCoverDataURL, setGeneratedCoverDataURL] = useState<string | null>(null)
-  const [s1CoverImg, setS1CoverImg] = useState<string | null>(null)
-  const [s2CanvasMode, setS2CanvasMode] = useState(false)
 
-  const s2CanvasRef = useRef<HTMLCanvasElement>(null)
   const launchInProgressRef = useRef(false)
   const timerSettingsRef = useRef<HTMLDivElement>(null)
   const [timerSettingsOpen, setTimerSettingsOpen] = useState(false)
@@ -538,19 +503,10 @@ export default function HitsDifferentApp() {
     }
 
     window.setTimeout(() => {
-      if (generatedCoverDataURL && s2CanvasRef.current) {
-        queueGeneratedCoverPaint(
-          generatedCoverDataURL,
-          s2CanvasRef,
-          setS2CanvasMode,
-        )
-      } else {
-        setS2CanvasMode(false)
-      }
       launchInProgressRef.current = false
       beginBlock(1)
     }, 0)
-  }, [beginBlock, generatedCoverDataURL, isSignedIn, taskInput])
+  }, [beginBlock, isSignedIn, taskInput])
 
   const restartSession = useCallback(() => {
     clearTimer()
@@ -567,43 +523,8 @@ export default function HitsDifferentApp() {
     setTaskText('')
     launchInProgressRef.current = false
     setDoneOpen(false)
-    setS2CanvasMode(false)
-    setGeneratedCoverDataURL(null)
-    setS1CoverImg(null)
     setCurSession(1)
   }, [clearTimer])
-
-  const generateAICover = useCallback(async () => {
-    const task = taskInput.trim() || taskText || 'focus session'
-    const applyCoverUrls = (url: string) => {
-      setGeneratedCoverDataURL(url)
-      setS1CoverImg(url)
-    }
-    setAiBusy(true)
-    try {
-      const res = await fetch('/api/ai-cover', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task, vibe: selectedVibe }),
-      })
-      const data = (await res.json()) as {
-        ok?: boolean
-        parsed?: ParsedCover
-        error?: string
-      }
-      if (!res.ok || !data.parsed) {
-        throw new Error(data.error || 'failed')
-      }
-      const url = drawGeneratedCoverCanvas(data.parsed, selectedVibe)
-      applyCoverUrls(url)
-      showToast('Album cover generated ✓')
-    } catch {
-      applyCoverUrls(drawFallbackCoverCanvas(task, selectedVibe))
-      showToast('Using vibe cover — add AI key on the server for generated art')
-    } finally {
-      setAiBusy(false)
-    }
-  }, [selectedVibe, showToast, taskInput, taskText])
 
   const exportHistory = useCallback(() => {
     if (!sessionHistory.length) {
@@ -628,33 +549,19 @@ export default function HitsDifferentApp() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const draw = (img: HTMLImageElement | null) => {
-      if (img) {
-        ctx.drawImage(img, 0, 0, 1000, 1000)
-      } else {
-        ctx.fillStyle = '#C8A020'
-        ctx.fillRect(0, 0, 1000, 1000)
-        ctx.font = '320px serif'
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillText('🎵', 500, 500)
-      }
-      overlayCoverText(ctx, taskText, selectedVibe)
-      canvas.toBlob((blob) => {
-        if (!blob) return
-        triggerBlobDownload(blob, 'hits-different-cover.png')
-        showToast('Album cover saved ✓')
-      })
-    }
-
-    if (generatedCoverDataURL) {
-      const img = new Image()
-      img.onload = () => draw(img)
-      img.src = generatedCoverDataURL
-    } else {
-      draw(null)
-    }
-  }, [generatedCoverDataURL, selectedVibe, showToast, taskText])
+    ctx.fillStyle = '#C8A020'
+    ctx.fillRect(0, 0, 1000, 1000)
+    ctx.font = '320px serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('🎵', 500, 500)
+    overlayCoverText(ctx, taskText, selectedVibe)
+    canvas.toBlob((blob) => {
+      if (!blob) return
+      triggerBlobDownload(blob, 'hits-different-cover.png')
+      showToast('Album cover saved ✓')
+    })
+  }, [selectedVibe, showToast, taskText])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -854,35 +761,7 @@ export default function HitsDifferentApp() {
                 className="relative z-[3] flex aspect-square w-full max-w-[200px] shrink-0 items-center justify-center overflow-hidden rounded bg-[#222] text-[clamp(44px,12vw,58px)] transition-transform duration-300"
                 id="s1Cover"
               >
-                <div
-                  className={cn(
-                    'absolute inset-0 z-10 flex flex-col items-center justify-center rounded bg-black/80 transition-opacity duration-300',
-                    aiBusy ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0',
-                  )}
-                  id="s1Loader"
-                >
-                  <div className="hd-ai-spinner size-7 rounded-full border-2 border-white/15 border-t-white" />
-                  <div className="mt-2.5 text-center font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/50">
-                    GENERATING
-                    <br />
-                    COVER ART
-                  </div>
-                </div>
-                {s1CoverImg ? (
-                  <NextImage
-                    src={s1CoverImg}
-                    alt=""
-                    fill
-                    unoptimized
-                    className="z-[1] object-cover"
-                    sizes="200px"
-                  />
-                ) : null}
-                <span
-                  className="relative z-[2] text-[clamp(44px,12vw,58px)]"
-                  id="s1Emoji"
-                  style={{ display: s1CoverImg ? 'none' : 'block' }}
-                >
+                <span className="relative z-[2] text-[clamp(44px,12vw,58px)]" id="s1Emoji">
                   🎵
                 </span>
               </div>
@@ -981,18 +860,6 @@ export default function HitsDifferentApp() {
 
               <button
                 type="button"
-                className={cn(
-                  'w-full cursor-pointer rounded border-[1.5px] border-dashed border-white/30 bg-black/25 py-2 text-left font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide text-white/70 transition-all hover:border-white hover:bg-black/35 hover:text-white',
-                  aiBusy && 'cursor-not-allowed opacity-50',
-                )}
-                id="aiCoverBtn"
-                disabled={aiBusy}
-                onClick={() => void generateAICover()}
-              >
-                {aiBusy ? '✦ GENERATING…' : '✦ GENERATE AI ALBUM COVER'}
-              </button>
-              <button
-                type="button"
                 className={cn(HD_TOP_BAR_BTN, 'pt-1 text-left')}
                 onClick={() => setHistoryOpen(true)}
               >
@@ -1052,21 +919,9 @@ export default function HitsDifferentApp() {
                   className="relative z-[3] flex aspect-square w-full max-w-[200px] shrink-0 items-center justify-center overflow-hidden rounded bg-[#222] text-[clamp(44px,12vw,58px)] transition-transform duration-300"
                   id="s2Cover"
                 >
-                  <span
-                    className="relative z-[2] text-[clamp(44px,12vw,58px)]"
-                    id="s2Emoji"
-                    style={{ display: s2CanvasMode ? 'none' : 'block' }}
-                  >
+                  <span className="relative z-[2] text-[clamp(44px,12vw,58px)]" id="s2Emoji">
                     🎵
                   </span>
-                  <canvas
-                    ref={s2CanvasRef}
-                    className={cn(
-                      'absolute inset-0 h-full w-full',
-                      s2CanvasMode ? 'block' : 'hidden',
-                    )}
-                    id="s2Canvas"
-                  />
                 </div>
                 <div className={cn('hd-vinyl', s2VinylSpin && 'hd-vinyl-spin')} id="s2Vinyl" />
               </div>

@@ -46,12 +46,6 @@
   }
 }
 
-@keyframes hd-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Vinyl record: gradient too long for inline utilities */
 @layer components {
   .hd-vinyl {
@@ -92,10 +86,6 @@
 
   .hd-vinyl-spin {
     animation: hd-vinyl 2.8s linear infinite;
-  }
-
-  .hd-ai-spinner {
-    animation: hd-spin 0.8s linear infinite;
   }
 
   @media (max-width: 1023px) {

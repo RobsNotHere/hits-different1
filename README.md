@@ -43,9 +43,8 @@ Signing in with a **free** Spotify account still works for profile-based flows; 
    | `AUTH_URL` | Yes in production | Dev: `http://localhost:3000` — match your dev server URL |
    | `SPOTIFY_CLIENT_ID` | For Spotify login | [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) |
    | `SPOTIFY_CLIENT_SECRET` | For Spotify login | Same app as above |
-   | `ANTHROPIC_API_KEY` | No | Enables server-side “AI album cover” generation; without it, the app falls back to a vibe-based cover |
 
-   **Secrets in the browser:** Never define API keys or `AUTH_SECRET` with a `NEXT_PUBLIC_` prefix. Next.js inlines those into client JavaScript, so they can appear in Chrome DevTools. This app reads `ANTHROPIC_API_KEY` only on the server (`/api/ai-cover`). On **Vercel**, use the name `ANTHROPIC_API_KEY` only (value = the key, no `NAME=` prefix). If a key ever showed up under Sources/Console, remove any `NEXT_PUBLIC_` copy in Vercel and **rotate** the key.
+   **Secrets in the browser:** Never define API keys or `AUTH_SECRET` with a `NEXT_PUBLIC_` prefix. Next.js inlines those into client JavaScript, so they can appear in Chrome DevTools.
 
 4. **Spotify redirect URI** — In your Spotify app settings, add:
 
@@ -103,7 +102,6 @@ If port **3000** is already in use, stop the other process or Next.js will pick 
 - `src/app/` — App Router: `layout.tsx`, `page.tsx`, `globals.css`
 - `src/components/hits-different/` — Main Pomodoro UI (`HitsDifferentApp`)
 - `src/app/api/auth/[...nextauth]/` — Auth.js route handlers
-- `src/app/api/ai-cover/` — Optional AI cover API (uses `ANTHROPIC_API_KEY` on the server)
 - `src/app/api/spotify/account/` — Reads Spotify profile `product` (Premium vs free) for in-app notices
 - `src/auth.ts` — Auth.js configuration (Spotify provider)
 - `src/context/` — React context for session/user helpers
