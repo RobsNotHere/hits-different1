@@ -20,6 +20,9 @@ dist-ssr
 next-env.d.ts
 *.tsbuildinfo
 
+# Windows reserved-name accident (breaks `git add -A` if present)
+/nul
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
