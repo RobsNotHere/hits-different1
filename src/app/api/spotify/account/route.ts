@@ -23,9 +23,8 @@ export async function GET() {
     if (process.env.NODE_ENV === 'development') {
       console.log('[hits-different] Spotify /v1/me error body:', text.slice(0, 400))
     }
-    const dev = process.env.NODE_ENV === 'development'
     return NextResponse.json(
-      dev ? { error: 'Spotify API error', detail: text } : { error: 'Spotify API error' },
+      { error: 'Spotify API error', detail: text },
       { status: res.status },
     )
   }

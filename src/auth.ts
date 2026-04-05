@@ -1,21 +1,17 @@
 import NextAuth from 'next-auth'
-import type { NextAuthConfig } from 'next-auth'
 import Spotify from 'next-auth/providers/spotify'
 import type { JWT } from 'next-auth/jwt'
 import { refreshSpotifyAccessToken } from '@/lib/spotify/refreshSpotifyAccessToken'
 
 /** Dev-only fallback so `/api/auth/session` works without `.env.local` (set AUTH_SECRET for stable local + prod). */
-export const authSecret: string | undefined =
+const authSecret =
   process.env.AUTH_SECRET ??
   (process.env.NODE_ENV === 'development'
     ? 'dev-only-insecure-auth-secret-not-for-production'
     : undefined)
 
-/** Passed to `Auth()` for server-side session refresh + JWT decode (see `getSpotifyAccessToken`). */
-export const authConfig = {
+export const { handlers, auth } = NextAuth({
   trustHost: true,
-  /** Explicit path so Auth.js never mis-infers `/auth` vs `/api/auth`. */
-  basePath: '/api/auth',
   secret: authSecret,
   providers: [
     Spotify({
@@ -64,11 +60,13 @@ export const authConfig = {
 
       return refreshSpotifyAccessToken(token)
     },
-    /** Do not expose Spotify `accessToken` to the client session JSON (`/api/auth/session`, `useSession`). */
-    session({ session }) {
+    session({ session, token }) {
+      if (token.error === 'RefreshAccessTokenError') {
+        session.accessToken = undefined
+        return session
+      }
+      session.accessToken = token.accessToken as string | undefined
       return session
     },
   },
-} satisfies NextAuthConfig
-
-export const { handlers, auth } = NextAuth(authConfig)
+})
