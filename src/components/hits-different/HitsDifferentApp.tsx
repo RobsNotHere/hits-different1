@@ -187,39 +187,6 @@ function TimerSelectRow({
   )
 }
 
-function SetupAboutLeftPanel({ onOpenHistory }: { onOpenHistory: () => void }) {
-  return (
-    <div className="flex min-h-full w-full flex-1 flex-col items-center justify-center px-1 py-2">
-      <div
-        className={cn(
-          'flex w-full max-w-[280px] flex-col items-start text-start',
-          HD_COLUMN_STACK_GAP,
-        )}
-      >
-        <h2 className="font-[family-name:var(--font-bebas)] text-[clamp(28px,5vw,40px)] leading-none tracking-wide text-white">
-          ABOUT
-        </h2>
-        <p className="font-[family-name:var(--font-space-mono)] text-[11px] leading-relaxed tracking-wide text-white/65">
-          Hits Different is a Pomodoro timer built around music vibes. Pick a mix, name your task, and run
-          focus rounds with optional in-browser Spotify when you connect your account.
-        </p>
-        <p className="font-[family-name:var(--font-space-mono)] text-[11px] leading-relaxed tracking-wide text-white/65">
-          <span className="text-white/85">Spotify Premium</span> is required for in-browser playback and for
-          reliable control through Spotify’s APIs. Free accounts may not be able to start or verify playback
-          the same way; you may also need the Spotify app open or an active device on your account.
-        </p>
-        <button
-          type="button"
-          className={cn(HD_TOP_BAR_BTN, 'text-left')}
-          onClick={onOpenHistory}
-        >
-          SESSION LOG →
-        </button>
-      </div>
-    </div>
-  )
-}
-
 function DotsRow({
   total,
   current,
@@ -335,8 +302,6 @@ export default function HitsDifferentApp() {
 
   const [sessionHistory, setSessionHistory] = useState<HistoryEntry[]>([])
   const [historyOpen, setHistoryOpen] = useState(false)
-  /** Setup-only: replaces left column with About; ticker + timer unchanged. */
-  const [setupLeftAbout, setSetupLeftAbout] = useState(false)
   const [toast, setToast] = useState({ msg: '', show: false })
   const [doneOpen, setDoneOpen] = useState(false)
   const [s2VinylSpin, setS2VinylSpin] = useState(false)
@@ -496,7 +461,6 @@ export default function HitsDifferentApp() {
     launchInProgressRef.current = true
     taskTextRef.current = t
     setTaskText(t)
-    setSetupLeftAbout(false)
     setView('session')
 
     if (!isSignedIn) {
@@ -518,7 +482,6 @@ export default function HitsDifferentApp() {
     spotifyDrovePauseRef.current = false
     browserSpotifyPlayingRef.current = false
     setView('setup')
-    setSetupLeftAbout(false)
     setTaskInput('')
     taskTextRef.current = ''
     setTaskText('')
@@ -629,18 +592,17 @@ export default function HitsDifferentApp() {
         className="fixed left-3 right-3 top-[max(1rem,env(safe-area-inset-top))] z-[200] flex flex-col gap-1.5 sm:left-6 sm:right-6"
         id="hdTopBar"
       >
-        <div className="flex w-full min-w-0 flex-nowrap items-baseline justify-between gap-x-3 gap-y-1">
-          <HdWordmark onNavClick={() => setSetupLeftAbout(false)} />
-          <div className="flex min-w-0 shrink-0 flex-nowrap items-baseline justify-end gap-x-3 sm:gap-3.5">
-            {view === 'setup' ? (
-              <button
-                type="button"
-                className={HD_TOP_BAR_BTN}
-                onClick={() => setSetupLeftAbout(true)}
-              >
-                ABOUT
-              </button>
-            ) : null}
+        <div className="flex w-full min-w-0 flex-nowrap items-center justify-between gap-x-3 gap-y-1">
+          <HdWordmark />
+          <div className="flex min-w-0 shrink-0 flex-nowrap items-center justify-end gap-x-2.5 sm:gap-x-3.5">
+            <button
+              type="button"
+              id="hdSessionLogNav"
+              className={HD_TOP_BAR_BTN}
+              onClick={() => setHistoryOpen(true)}
+            >
+              SESSION LOG →
+            </button>
             {status === 'authenticated' ? (
               <button
                 id="hdSpotifyNav"
@@ -748,9 +710,6 @@ export default function HitsDifferentApp() {
           id="s1Left"
         >
           <div className="flex h-full min-h-0 flex-col overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:w-0">
-            {setupLeftAbout ? (
-              <SetupAboutLeftPanel onOpenHistory={() => setHistoryOpen(true)} />
-            ) : (
             <div className="flex min-h-full w-full flex-1 flex-col items-center justify-center px-1 py-2">
               <div
                 className={cn(
@@ -774,18 +733,13 @@ export default function HitsDifferentApp() {
             </div>
 
             <div className={cn('flex w-full shrink-0 flex-col', HD_COLUMN_STACK_GAP)}>
-              <div className="font-[family-name:var(--font-space-mono)] text-[10px] uppercase tracking-wide text-white/50">
-                What are you working on?
-                <span className="ml-1.5 font-normal normal-case text-white/35">
-                  — press Enter to start
-                </span>
-              </div>
               <div className="flex w-full justify-start gap-2">
                 <input
                   className="min-w-0 flex-1 rounded border-[1.5px] border-white/30 bg-white/10 px-3 py-2 text-left font-[family-name:var(--font-space-mono)] text-[13px] text-white outline-none transition-colors placeholder:text-white/30 focus:border-white/70"
                   id="taskInput"
                   type="text"
-                  placeholder="E.G. FINISH FRAMER WORK"
+                  aria-label="Set your task — press Enter to start"
+                  placeholder="Set your task to begin"
                   maxLength={42}
                   value={taskInput}
                   onChange={(e) => setTaskInput(e.target.value)}
@@ -867,18 +821,9 @@ export default function HitsDifferentApp() {
                   ) : null}
                 </div>
               </div>
-
-              <button
-                type="button"
-                className={cn(HD_TOP_BAR_BTN, 'pt-1 text-left')}
-                onClick={() => setHistoryOpen(true)}
-              >
-                SESSION LOG →
-              </button>
             </div>
               </div>
             </div>
-            )}
           </div>
         </div>
 
@@ -895,9 +840,6 @@ export default function HitsDifferentApp() {
           <div className="relative z-[5] w-full text-start">
             <div className="font-[family-name:var(--font-bebas)] text-[clamp(88px,16vw,168px)] leading-none tracking-[6px] text-white/10">
               {String(focusMins).padStart(2, '0')}:00
-            </div>
-            <div className="mt-1.5 font-[family-name:var(--font-space-mono)] text-[10px] uppercase tracking-[3px] text-white/30">
-              Set your task to begin
             </div>
           </div>
           <DotsRow total={totalSessions} current={1} id="previewDots" />
