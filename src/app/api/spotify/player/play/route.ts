@@ -6,6 +6,9 @@ type Body = {
   contextUri?: string
 }
 
+const CONTEXT_URI = /^spotify:(playlist|album):[a-zA-Z0-9]+$/u
+const DEVICE_ID = /^[a-f0-9]{40}$/i
+
 /**
  * Start playback on the Web Playback device (`spotify:playlist:…` or album URI).
  */
@@ -28,6 +31,10 @@ export async function POST(req: Request) {
       { error: 'deviceId and contextUri required' },
       { status: 400 },
     )
+  }
+
+  if (!CONTEXT_URI.test(contextUri) || !DEVICE_ID.test(deviceId)) {
+    return NextResponse.json({ error: 'Invalid deviceId or contextUri' }, { status: 400 })
   }
 
   const url = new URL('https://api.spotify.com/v1/me/player/play')
@@ -57,8 +64,9 @@ export async function POST(req: Request) {
   if (process.env.NODE_ENV === 'development') {
     console.log('[hits-different] Spotify play error:', detail.slice(0, 500))
   }
+  const dev = process.env.NODE_ENV === 'development'
   return NextResponse.json(
-    { error: 'Spotify play failed', detail },
+    dev ? { error: 'Spotify play failed', detail } : { error: 'Spotify play failed' },
     { status: res.status },
   )
 }
