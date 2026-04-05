@@ -13,9 +13,6 @@ const authSecret =
 export const { handlers, auth } = NextAuth({
   trustHost: true,
   secret: authSecret,
-  pages: {
-    error: '/auth/error',
-  },
   providers: [
     Spotify({
       clientId: process.env.SPOTIFY_CLIENT_ID ?? '',
