@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { AuthErrorTrySpotifyButton } from './AuthErrorTrySpotify'
 
 export const metadata: Metadata = {
   title: 'Sign-in issue — Hits Different',
@@ -20,6 +21,8 @@ const MESSAGES: Record<string, string> = {
   OAuthAccountNotLinked:
     'This account is already linked to another sign-in method.',
   SessionRequired: 'You need to be signed in to view that page.',
+  UnknownAction:
+    'That sign-in link is not valid for this app version. Use the button below to start Spotify sign-in again.',
   Default: 'Something went wrong during sign-in. Please try again.',
 }
 
@@ -31,10 +34,6 @@ export default async function AuthErrorPage({ searchParams }: PageProps) {
   const params = await searchParams
   const code = params.error?.trim() || 'Default'
   const message = MESSAGES[code] ?? MESSAGES.Default
-
-  const tryAgainHref =
-    '/api/auth/signin/spotify?' +
-    new URLSearchParams({ callbackUrl: '/' }).toString()
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-center bg-hd-bg px-6 py-12 font-sans text-white">
@@ -49,12 +48,7 @@ export default async function AuthErrorPage({ searchParams }: PageProps) {
           </p>
         ) : null}
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Link
-            href={tryAgainHref}
-            className="inline-flex items-center justify-center rounded-lg border border-hd-gold/50 bg-hd-gold/15 px-4 py-2.5 text-center text-sm font-medium text-hd-gold transition hover:bg-hd-gold/25"
-          >
-            Try Spotify again
-          </Link>
+          <AuthErrorTrySpotifyButton className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-hd-gold/50 bg-hd-gold/15 px-4 py-2.5 text-center text-sm font-medium text-hd-gold transition hover:bg-hd-gold/25" />
           <Link
             href="/"
             className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-transparent px-4 py-2.5 text-center text-sm text-white/70 transition hover:border-white/30 hover:text-white"

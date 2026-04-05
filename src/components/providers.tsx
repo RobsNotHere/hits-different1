@@ -7,6 +7,7 @@ import type { ReactNode } from 'react'
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <SessionProvider
+      basePath="/api/auth"
       refetchOnWindowFocus={false}
       refetchWhenOffline={false}
     >
