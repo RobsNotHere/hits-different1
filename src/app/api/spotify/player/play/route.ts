@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getSpotifyAccessToken } from '@/lib/spotify/getSpotifyAccessToken'
+import { requireSpotifyAccessToken } from '@/lib/spotify/getSpotifyAccessToken'
 
 type Body = {
   deviceId?: string
@@ -8,12 +8,12 @@ type Body = {
 
 /**
  * Start playback on the Web Playback device (`spotify:playlist:…` or album URI).
+ * Spotify access token is taken only from the session — never from the request body.
  */
 export async function POST(req: Request) {
-  const token = await getSpotifyAccessToken()
-  if (!token) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const guard = await requireSpotifyAccessToken()
+  if (!guard.ok) return guard.response
+  const { token } = guard
 
   let body: Body
   try {

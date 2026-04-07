@@ -1,6 +1,10 @@
 import NextAuth from 'next-auth'
 import Spotify from 'next-auth/providers/spotify'
 import type { JWT } from 'next-auth/jwt'
+import {
+  middlewareAuthorized,
+  type AuthorizedRequest,
+} from '@/lib/auth/middlewareAuthorized'
 import { refreshSpotifyAccessToken } from '@/lib/spotify/refreshSpotifyAccessToken'
 
 /** Dev-only fallback so `/api/auth/session` works without `.env.local` (set AUTH_SECRET for stable local + prod). */
@@ -13,6 +17,9 @@ const authSecret =
 export const { handlers, auth } = NextAuth({
   trustHost: true,
   secret: authSecret,
+  pages: {
+    error: '/auth/error',
+  },
   providers: [
     Spotify({
       clientId: process.env.SPOTIFY_CLIENT_ID ?? '',
@@ -33,6 +40,12 @@ export const { handlers, auth } = NextAuth({
     }),
   ],
   callbacks: {
+    authorized({ request, auth }) {
+      return middlewareAuthorized({
+        request: request as AuthorizedRequest,
+        auth,
+      })
+    },
     async jwt({ token, account }): Promise<JWT> {
       if (account?.access_token) {
         return {

@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server'
-import { getSpotifyAccessToken } from '@/lib/spotify/getSpotifyAccessToken'
+import { requireSpotifyAccessToken } from '@/lib/spotify/getSpotifyAccessToken'
 
 /**
  * Returns the signed-in user's Spotify `product` (e.g. premium, free) for client UX.
+ * Token always comes from the session — never from client-supplied Bearer/query/body.
  */
 export async function GET() {
-  const token = await getSpotifyAccessToken()
-  if (!token) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const guard = await requireSpotifyAccessToken()
+  if (!guard.ok) return guard.response
+  const { token } = guard
 
   const res = await fetch('https://api.spotify.com/v1/me', {
     headers: { Authorization: `Bearer ${token}` },
