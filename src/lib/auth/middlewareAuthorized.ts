@@ -1,7 +1,7 @@
 import type { Session } from 'next-auth'
 import { jsonUnauthorized } from '@/lib/auth/apiResponses'
 
-/** Narrow request shape for path checks. Structural type avoids duplicate `NextRequest` graphs (pnpm + Next). */
+/** Narrow request shape for path checks. Structural type avoids duplicate `NextRequest` graphs when Next resolves twice. */
 export type AuthorizedRequest = {
   nextUrl: { pathname: string }
 }
