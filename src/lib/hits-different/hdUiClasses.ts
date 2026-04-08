@@ -11,9 +11,17 @@ export const HD_TIMER_STAGE_COLUMN =
 /** Vertical spacing between album, labels, and inputs (setup + session left columns). */
 export const HD_COLUMN_STACK_GAP = 'gap-4'
 
-/** Bottom caption under dots on timer stage columns. */
-export const HD_STAGE_FOOTER_LABEL =
-  'absolute bottom-[22px] left-4 z-[5] whitespace-nowrap font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/20 sm:left-6'
+/** Bottom stack in timer column (pomodoro caption + copyright); matches column padding. */
+export const HD_STAGE_FOOTER_STACK =
+  'pointer-events-none absolute bottom-[22px] left-4 z-[5] flex flex-col items-start gap-1 sm:left-6'
+
+/** Pomodoro session / preview caption line. */
+export const HD_STAGE_FOOTER_LINE =
+  'whitespace-nowrap font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/20'
+
+/** Copyright under pomodoro line (same horizontal alignment). */
+export const HD_COPYRIGHT_LINE =
+  'whitespace-nowrap font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/15'
 
 export function hdMainGridShellClass(
   mode: 'setup' | 'session',

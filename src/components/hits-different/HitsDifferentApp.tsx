@@ -37,7 +37,9 @@ import {
 import { spotifyPlaylistContextUri } from '@/lib/hits-different/spotifyPlaylistUri'
 import {
   HD_COLUMN_STACK_GAP,
-  HD_STAGE_FOOTER_LABEL,
+  HD_COPYRIGHT_LINE,
+  HD_STAGE_FOOTER_LINE,
+  HD_STAGE_FOOTER_STACK,
   HD_TIMER_STAGE_COLUMN,
   HD_TOP_BAR_BTN,
   hdMainGridShellClass,
@@ -321,6 +323,7 @@ export default function HitsDifferentApp() {
   useSessionTimerDocumentMeta(view === 'session' && !doneOpen, remaining)
 
   const pipWindowRef = useRef<Window | null>(null)
+  const togglePauseRef = useRef<() => void>(() => {})
 
   const viewRef = useRef(view)
   const doneOpenRef = useRef(doneOpen)
@@ -385,9 +388,11 @@ export default function HitsDifferentApp() {
     const timeEl = pip.document.getElementById('pip-time')
     const modeEl = pip.document.getElementById('pip-mode')
     const pausedEl = pip.document.getElementById('pip-paused')
+    const toggleBtn = pip.document.getElementById('pip-toggle')
     if (timeEl) timeEl.textContent = fmt(remaining)
     if (modeEl) modeEl.textContent = timerMode
     if (pausedEl) pausedEl.textContent = paused ? 'PAUSED' : ''
+    if (toggleBtn) toggleBtn.textContent = paused ? 'Resume' : 'Pause'
   }, [remaining, timerMode, paused])
 
   useEffect(() => {
@@ -413,7 +418,7 @@ export default function HitsDifferentApp() {
         syncPipTimerWindow()
         return
       }
-      const pip = await api.requestWindow({ width: 280, height: 148 })
+      const pip = await api.requestWindow({ width: 280, height: 188 })
       pipWindowRef.current = pip
       pip.document.body.style.margin = '0'
       pip.document.body.style.background = '#0c0c0c'
@@ -422,8 +427,18 @@ export default function HitsDifferentApp() {
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;box-sizing:border-box;padding:12px;font-family:ui-monospace,monospace;">
         <div id="pip-time" style="font-size:40px;font-weight:600;letter-spacing:0.06em;line-height:1;">${fmt(remaining)}</div>
         <div id="pip-mode" style="margin-top:6px;font-size:11px;letter-spacing:0.25em;opacity:0.45;">${timerMode}</div>
-        <div id="pip-paused" style="margin-top:4px;font-size:10px;letter-spacing:0.15em;opacity:0.65;">${paused ? 'PAUSED' : ''}</div>
+        <div id="pip-paused" style="margin-top:4px;min-height:14px;font-size:10px;letter-spacing:0.15em;opacity:0.65;">${paused ? 'PAUSED' : ''}</div>
+        <button type="button" id="pip-toggle" style="margin-top:14px;display:inline-flex;align-items:center;justify-content:center;padding:8px 22px;border-radius:4px;border:1px solid rgba(255,255,255,0.35);background:#fff;color:#0c0c0c;font-family:inherit;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">
+          ${paused ? 'Resume' : 'Pause'}
+        </button>
       </div>`
+      const pipToggle = pip.document.getElementById('pip-toggle')
+      if (pipToggle) {
+        pipToggle.addEventListener('click', (ev) => {
+          ev.preventDefault()
+          togglePauseRef.current()
+        })
+      }
       pip.addEventListener('pagehide', () => {
         pipWindowRef.current = null
       })
@@ -519,6 +534,10 @@ export default function HitsDifferentApp() {
     setPaused(nextPaused)
     setS2VinylSpin(!nextPaused)
   }, [])
+
+  useEffect(() => {
+    togglePauseRef.current = togglePause
+  }, [togglePause])
 
   const launch = useCallback(() => {
     if (launchInProgressRef.current) return
@@ -931,8 +950,13 @@ export default function HitsDifferentApp() {
             </div>
           </div>
           <DotsRow total={totalSessions} current={1} id="previewDots" />
-          <div className={HD_STAGE_FOOTER_LABEL} id="previewLabel">
-            {totalSessions} POMODORO SESSIONS
+          <div className={HD_STAGE_FOOTER_STACK} id="previewLabel">
+            <div className={HD_STAGE_FOOTER_LINE}>
+              {totalSessions} POMODORO SESSIONS
+            </div>
+            <p className={HD_COPYRIGHT_LINE} aria-hidden>
+              © {new Date().getFullYear()} Hits Different
+            </p>
           </div>
         </div>
       </div>
@@ -1108,18 +1132,17 @@ export default function HitsDifferentApp() {
               ⛶ PiP
             </button>
           </div>
-          <div className={HD_STAGE_FOOTER_LABEL} id="sessLabel">
-            SESSION {curSession} OF {totalSessions}
+          <div className={HD_STAGE_FOOTER_STACK} id="sessLabel">
+            <div className={HD_STAGE_FOOTER_LINE}>
+              SESSION {curSession} OF {totalSessions}
+            </div>
+            <p className={HD_COPYRIGHT_LINE} aria-hidden>
+              © {new Date().getFullYear()} Hits Different
+            </p>
           </div>
         </div>
       </div>
 
-      <p
-        className="pointer-events-none fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-0 right-0 z-[8] text-center font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/20"
-        aria-hidden
-      >
-        © {new Date().getFullYear()} Hits Different
-      </p>
     </div>
     </TickerWheelProvider>
   )
