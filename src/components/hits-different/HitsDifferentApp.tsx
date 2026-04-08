@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useUser } from '@/context/UserContext'
+import { useSessionTimerDocumentMeta } from '@/hooks/useSessionTimerDocumentMeta'
 import { useSpotifyPlaybackNotice } from '@/hooks/useSpotifyPlaybackNotice'
 import { SpotifyWebPlayer } from '@/components/hits-different/SpotifyWebPlayer'
 import { HdWordmark } from '@/components/hits-different/HdWordmark'
@@ -297,6 +298,7 @@ export default function HitsDifferentApp() {
 
   /** Option B highlight: snap to first clone when switching setup ↔ session. */
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync ticker wheel to view change
     setVibeHighlight({ tickerId: 'ticker1', duplicateIndex: 0 })
   }, [view])
 
@@ -308,12 +310,17 @@ export default function HitsDifferentApp() {
 
   const launchInProgressRef = useRef(false)
   const timerSettingsRef = useRef<HTMLDivElement>(null)
+  const beginBlockRef = useRef<(sessionNum: number) => void>(() => {})
   const [timerSettingsOpen, setTimerSettingsOpen] = useState(false)
   const demoFocusAudioRef = useRef<HTMLAudioElement>(null)
   const demoBreakAudioRef = useRef<HTMLAudioElement>(null)
 
   const { notice: spotifyPlaybackNotice, accountVerified: spotifyAccountVerified } =
     useSpotifyPlaybackNotice(status)
+
+  useSessionTimerDocumentMeta(view === 'session' && !doneOpen, remaining)
+
+  const pipWindowRef = useRef<Window | null>(null)
 
   const viewRef = useRef(view)
   const doneOpenRef = useRef(doneOpen)
@@ -343,6 +350,7 @@ export default function HitsDifferentApp() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(HISTORY_KEY)
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate session log from localStorage once
       if (raw) setSessionHistory(JSON.parse(raw) as HistoryEntry[])
     } catch {
       /* ignore */
@@ -370,6 +378,60 @@ export default function HitsDifferentApp() {
     setToast({ msg, show: true })
     window.setTimeout(() => setToast((t) => ({ ...t, show: false })), dur)
   }, [])
+
+  const syncPipTimerWindow = useCallback(() => {
+    const pip = pipWindowRef.current
+    if (!pip || pip.closed) return
+    const timeEl = pip.document.getElementById('pip-time')
+    const modeEl = pip.document.getElementById('pip-mode')
+    const pausedEl = pip.document.getElementById('pip-paused')
+    if (timeEl) timeEl.textContent = fmt(remaining)
+    if (modeEl) modeEl.textContent = timerMode
+    if (pausedEl) pausedEl.textContent = paused ? 'PAUSED' : ''
+  }, [remaining, timerMode, paused])
+
+  useEffect(() => {
+    syncPipTimerWindow()
+  }, [syncPipTimerWindow])
+
+  const openTimerPictureInPicture = useCallback(async () => {
+    const api = (
+      window as Window & {
+        documentPictureInPicture?: {
+          requestWindow: (o?: { width?: number; height?: number }) => Promise<Window>
+        }
+      }
+    ).documentPictureInPicture
+    if (!api) {
+      showToast('Picture-in-picture needs a supported browser (e.g. Chrome)')
+      return
+    }
+    try {
+      const existing = pipWindowRef.current
+      if (existing && !existing.closed) {
+        existing.focus()
+        syncPipTimerWindow()
+        return
+      }
+      const pip = await api.requestWindow({ width: 280, height: 148 })
+      pipWindowRef.current = pip
+      pip.document.body.style.margin = '0'
+      pip.document.body.style.background = '#0c0c0c'
+      pip.document.body.style.color = '#e5e5e5'
+      pip.document.body.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;box-sizing:border-box;padding:12px;font-family:ui-monospace,monospace;">
+        <div id="pip-time" style="font-size:40px;font-weight:600;letter-spacing:0.06em;line-height:1;">${fmt(remaining)}</div>
+        <div id="pip-mode" style="margin-top:6px;font-size:11px;letter-spacing:0.25em;opacity:0.45;">${timerMode}</div>
+        <div id="pip-paused" style="margin-top:4px;font-size:10px;letter-spacing:0.15em;opacity:0.65;">${paused ? 'PAUSED' : ''}</div>
+      </div>`
+      pip.addEventListener('pagehide', () => {
+        pipWindowRef.current = null
+      })
+      syncPipTimerWindow()
+    } catch {
+      showToast('Picture-in-picture failed or was blocked')
+    }
+  }, [paused, remaining, showToast, syncPipTimerWindow, timerMode])
 
   const onSpotifyWebError = useCallback((msg: string) => showToast(msg), [showToast])
 
@@ -428,7 +490,7 @@ export default function HitsDifferentApp() {
             sessionNum,
             totalSessions,
             intervalRef,
-            beginBlock,
+            (n) => beginBlockRef.current(n),
             finish,
           ),
         )
@@ -443,6 +505,10 @@ export default function HitsDifferentApp() {
     },
     [breakMins, clearTimer, finish, focusMins, totalSessions],
   )
+
+  useEffect(() => {
+    beginBlockRef.current = beginBlock
+  }, [beginBlock])
 
   useEffect(() => () => clearTimer(), [clearTimer])
 
@@ -733,27 +799,39 @@ export default function HitsDifferentApp() {
             </div>
 
             <div className={cn('flex w-full shrink-0 flex-col', HD_COLUMN_STACK_GAP)}>
-              <div className="flex w-full justify-start gap-2">
-                <input
-                  className="min-w-0 flex-1 rounded border-[1.5px] border-white/30 bg-white/10 px-3 py-2 text-left font-[family-name:var(--font-space-mono)] text-[13px] text-white outline-none transition-colors placeholder:text-white/30 focus:border-white/70"
-                  id="taskInput"
-                  type="text"
-                  aria-label="Set your task — press Enter to start"
-                  placeholder="Set your task to begin"
-                  maxLength={42}
-                  value={taskInput}
-                  onChange={(e) => setTaskInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key !== 'Enter') return
-                    e.preventDefault()
-                    launch()
-                  }}
-                />
-                <div className="relative shrink-0" ref={timerSettingsRef}>
+              <div className="flex w-full flex-col gap-2">
+                <div className="flex w-full justify-start gap-2">
+                  <input
+                    className="min-w-0 flex-1 rounded border-[1.5px] border-white/30 bg-white/10 px-3 py-2 text-left font-[family-name:var(--font-space-mono)] text-[13px] text-white outline-none transition-colors placeholder:text-white/30 focus:border-white/70"
+                    id="taskInput"
+                    type="text"
+                    aria-label="Set your task — press Enter to start"
+                    placeholder="Set your task to begin"
+                    maxLength={42}
+                    value={taskInput}
+                    onChange={(e) => setTaskInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return
+                      e.preventDefault()
+                      launch()
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="flex h-[38px] min-w-[52px] shrink-0 items-center justify-center rounded border-[1.5px] border-transparent bg-white px-3 font-[family-name:var(--font-bebas)] text-xl leading-none tracking-wide text-hd-bg transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:border-white/20 disabled:bg-white/20 disabled:text-white/50 disabled:hover:bg-white/20"
+                    disabled={!taskInput.trim()}
+                    title="Start session"
+                    aria-label="Start session"
+                    onClick={() => launch()}
+                  >
+                    ▶
+                  </button>
+                </div>
+                <div className="relative flex justify-start" ref={timerSettingsRef}>
                   <button
                     type="button"
                     className={cn(
-                      'flex h-[38px] w-[38px] items-center justify-center rounded border-[1.5px] border-white/25 bg-black/25 font-[family-name:var(--font-space-mono)] text-[15px] text-white/80 transition-colors hover:border-white/45 hover:bg-black/35 hover:text-white',
+                      'flex h-[34px] w-[34px] items-center justify-center rounded border-[1.5px] border-white/25 bg-black/25 font-[family-name:var(--font-space-mono)] text-[14px] text-white/80 transition-colors hover:border-white/45 hover:bg-black/35 hover:text-white',
                       timerSettingsOpen && 'border-white/50 bg-black/40 text-white',
                     )}
                     title="Focus, break & rounds"
@@ -766,7 +844,7 @@ export default function HitsDifferentApp() {
                   </button>
                   {timerSettingsOpen ? (
                     <div
-                      className="absolute right-0 bottom-[calc(100%+6px)] z-[60] w-[min(calc(100vw-2.5rem),220px)] rounded border border-white/15 bg-[#141414] p-3 text-left shadow-[0_-12px_40px_rgba(0,0,0,0.55)]"
+                      className="absolute left-0 top-[calc(100%+8px)] z-[60] w-[min(calc(100vw-2.5rem),220px)] rounded border border-white/15 bg-[#141414] p-3 text-left shadow-[0_12px_40px_rgba(0,0,0,0.55)]"
                       id="timerSettingsPanel"
                       role="dialog"
                       aria-modal="true"
@@ -990,7 +1068,7 @@ export default function HitsDifferentApp() {
             </div>
           </div>
           <DotsRow total={totalSessions} current={curSession} id="liveDots" />
-          <div className="relative z-[5] mt-5 flex justify-start gap-2">
+          <div className="relative z-[5] mt-5 flex flex-wrap justify-start gap-2">
             <button
               type="button"
               className="cursor-pointer rounded border border-white/20 bg-white/10 px-4 py-1.5 font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide text-white transition-colors hover:bg-white/15"
@@ -1011,12 +1089,27 @@ export default function HitsDifferentApp() {
             >
               {paused ? '▶ RESUME' : '⏸ PAUSE'}
             </button>
+            <button
+              type="button"
+              className="cursor-pointer rounded border border-white/20 bg-white/10 px-4 py-1.5 font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide text-white transition-colors hover:bg-white/15"
+              title="Floating timer window (Chrome / Edge)"
+              onClick={() => void openTimerPictureInPicture()}
+            >
+              ⛶ PiP
+            </button>
           </div>
           <div className={HD_STAGE_FOOTER_LABEL} id="sessLabel">
             SESSION {curSession} OF {totalSessions}
           </div>
         </div>
       </div>
+
+      <p
+        className="pointer-events-none fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-0 right-0 z-[8] text-center font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/20"
+        aria-hidden
+      >
+        © {new Date().getFullYear()} Hits Different
+      </p>
     </div>
     </TickerWheelProvider>
   )
