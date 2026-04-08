@@ -802,7 +802,7 @@ export default function HitsDifferentApp() {
               <div className="flex w-full flex-col gap-2">
                 <div className="flex w-full justify-start gap-2">
                   <input
-                    className="min-w-0 flex-1 rounded border-[1.5px] border-white/30 bg-white/10 px-3 py-2 text-left font-[family-name:var(--font-space-mono)] text-[13px] text-white outline-none transition-colors placeholder:text-white/30 focus:border-white/70"
+                    className="min-w-0 flex-1 rounded border-[1.5px] border-white/25 bg-black/35 px-3 py-2 text-left font-[family-name:var(--font-space-mono)] text-[13px] text-white outline-none transition-colors placeholder:text-white/30 focus:border-white/45 focus:bg-black/40 focus:outline-none"
                     id="taskInput"
                     type="text"
                     aria-label="Set your task — press Enter to start"
@@ -818,13 +818,23 @@ export default function HitsDifferentApp() {
                   />
                   <button
                     type="button"
-                    className="flex h-[38px] min-w-[52px] shrink-0 items-center justify-center rounded border-[1.5px] border-transparent bg-white px-3 font-[family-name:var(--font-bebas)] text-xl leading-none tracking-wide text-hd-bg transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:border-white/20 disabled:bg-white/20 disabled:text-white/50 disabled:hover:bg-white/20"
+                    className={cn(
+                      'inline-flex size-[38px] shrink-0 items-center justify-center rounded border-[1.5px] p-0 font-[family-name:var(--font-space-mono)] text-[15px] leading-none transition-colors',
+                      taskInput.trim()
+                        ? 'border-transparent bg-white text-hd-bg hover:bg-zinc-200'
+                        : 'cursor-not-allowed border-white/20 bg-white/15 text-white/40 hover:bg-white/15',
+                    )}
                     disabled={!taskInput.trim()}
                     title="Start session"
                     aria-label="Start session"
                     onClick={() => launch()}
                   >
-                    ▶
+                    <span
+                      className="inline-flex size-full items-center justify-center pl-[2px] pt-[1px]"
+                      aria-hidden
+                    >
+                      ▶
+                    </span>
                   </button>
                 </div>
                 <div className="relative flex justify-start" ref={timerSettingsRef}>
