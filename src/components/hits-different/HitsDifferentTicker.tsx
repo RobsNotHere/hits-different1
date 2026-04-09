@@ -370,6 +370,17 @@ function WheelInfiniteVibeList({
             />
           ))}
         </div>
+        <div className="flex flex-col gap-2" aria-hidden>
+          {VIBES.map((v) => (
+            <VibeTickerButton
+              key={`${id}-e-${v}`}
+              vibe={v}
+              visuallySelected={isVibeVisuallySelected(v, 4)}
+              onPickVibe={onPickVibe}
+              duplicateIndex={4}
+            />
+          ))}
+        </div>
       </nav>
     </div>
   )
