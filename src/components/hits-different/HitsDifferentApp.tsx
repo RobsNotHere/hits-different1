@@ -27,12 +27,12 @@ import {
   DUR_OPTS,
   HISTORY_KEY,
   SESSION_DEMO_AUDIO,
+  sessionDemoFocusSrc,
   SESSION_OPTS,
   type HistoryEntry,
   type Vibe,
   VIBE_SAMPLE_PLAYLISTS,
   VIBE_TRACKS,
-  youtubeMusicSearchUrlFor,
 } from '@/lib/hits-different/data'
 import { spotifyPlaylistContextUri } from '@/lib/hits-different/spotifyPlaylistUri'
 import {
@@ -54,33 +54,6 @@ function fmt(totalSeconds: number) {
 const SAMPLE_MIX_LINK_CLS =
   'font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/55 underline decoration-white/25 underline-offset-2 transition-colors hover:text-white hover:decoration-white/50'
 
-function StreamMixAnchors({
-  spotifyUrl,
-  ytUrl,
-  browserPlay,
-}: {
-  spotifyUrl: string
-  ytUrl: string
-  browserPlay?: ReactNode
-}) {
-  return (
-    <>
-      <a
-        href={spotifyUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={SAMPLE_MIX_LINK_CLS}
-      >
-        Spotify
-      </a>
-      {browserPlay}
-      <a href={ytUrl} target="_blank" rel="noopener noreferrer" className={SAMPLE_MIX_LINK_CLS}>
-        YouTube Music
-      </a>
-    </>
-  )
-}
-
 function SampleMixLinks({
   vibe,
   browserPlay,
@@ -91,10 +64,17 @@ function SampleMixLinks({
   const v = vibe as Vibe
   const sample = VIBE_SAMPLE_PLAYLISTS[v]
   if (!sample) return null
-  const yt = youtubeMusicSearchUrlFor(v)
   return (
     <div className="flex flex-wrap items-start justify-start gap-x-3 gap-y-1 border-t border-white/10 pt-4">
-      <StreamMixAnchors spotifyUrl={sample.spotifyUrl} ytUrl={yt} browserPlay={browserPlay} />
+      <a
+        href={sample.spotifyUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={SAMPLE_MIX_LINK_CLS}
+      >
+        Spotify
+      </a>
+      {browserPlay}
     </div>
   )
 }
@@ -649,7 +629,9 @@ export default function HitsDifferentApp() {
       focusEl.volume = DEMO_LOOP_VOL
       void focusEl.play().catch(() => {})
     }
-  }, [view, timerMode, paused, doneOpen, isSignedIn])
+  }, [view, timerMode, paused, doneOpen, isSignedIn, selectedVibe])
+
+  const demoFocusSrc = sessionDemoFocusSrc(selectedVibe as Vibe)
 
   const isBreakTint = view === 'session' && curSession % 2 === 0
   const isDoneTint = doneOpen
@@ -658,9 +640,10 @@ export default function HitsDifferentApp() {
     <TickerWheelProvider>
     <div className="box-border min-h-svh w-full max-w-[100vw] overflow-x-hidden bg-hd-bg font-sans text-white antialiased select-none lg:h-svh lg:overflow-hidden">
       <audio
+        key={demoFocusSrc}
         ref={demoFocusAudioRef}
         className="sr-only"
-        src={SESSION_DEMO_AUDIO.focus}
+        src={demoFocusSrc}
         loop
         preload="auto"
         aria-hidden

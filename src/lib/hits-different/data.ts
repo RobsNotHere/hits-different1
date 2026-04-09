@@ -3,69 +3,41 @@ export const VIBES = [
   'HYPE',
   'JAZZ',
   'EDM',
-  'INDIE',
   'CLASSICAL',
-  'PUNK',
   'ACOUSTIC',
 ] as const
 
 export type Vibe = (typeof VIBES)[number]
 
 export const VIBE_TRACKS: Record<string, string> = {
-  'LO-FI': 'LO-FI BEATS MIX',
+  'LO-FI': 'LO-FI · CALM STUDY',
   HYPE: 'HYPE SPRINT MIX',
   JAZZ: 'JAZZ FLOW MIX',
   EDM: 'EDM FOCUS MIX',
-  INDIE: 'INDIE STUDY MIX',
-  CLASSICAL: 'CLASSICAL DEEP MIX',
-  PUNK: 'PUNK SPRINT MIX',
+  CLASSICAL: 'CHOPIN · BALLADE NO. 2',
   ACOUSTIC: 'ACOUSTIC CHILL MIX',
 }
 
-type VibePlaylistSample = {
-  spotifyUrl: string
-  youtubeMusicSearchQuery: string
-}
-
 /** Curated public Spotify playlists (editorial / widely used). */
-export const VIBE_SAMPLE_PLAYLISTS: Record<Vibe, VibePlaylistSample> = {
+export const VIBE_SAMPLE_PLAYLISTS: Record<Vibe, { spotifyUrl: string }> = {
   'LO-FI': {
     spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DWWQRwui0ExPn',
-    youtubeMusicSearchQuery: 'lofi hip hop beats chill study mix',
   },
   HYPE: {
     spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DX76Wlfdnj7AP',
-    youtubeMusicSearchQuery: 'workout hype motivation rap rock mix',
   },
   JAZZ: {
     spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DX0SM0LYsmbMT',
-    youtubeMusicSearchQuery: 'jazz instrumental focus study cafe mix',
   },
   EDM: {
     spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DX6J5NfMJS675',
-    youtubeMusicSearchQuery: 'techno edm focus deep work mix',
-  },
-  INDIE: {
-    spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DXdbXrPNafg9d',
-    youtubeMusicSearchQuery: 'indie alternative focus study mix',
   },
   CLASSICAL: {
     spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DWWEJlAGA9gs0',
-    youtubeMusicSearchQuery: 'classical music focus concentration study',
-  },
-  PUNK: {
-    spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DX3LDIBRoaCDQ',
-    youtubeMusicSearchQuery: 'punk rock energy workout mix',
   },
   ACOUSTIC: {
     spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DX6ziVCJnEm59',
-    youtubeMusicSearchQuery: 'acoustic coffeehouse mellow singer songwriter',
   },
-}
-
-export function youtubeMusicSearchUrlFor(vibe: Vibe): string {
-  const q = VIBE_SAMPLE_PLAYLISTS[vibe].youtubeMusicSearchQuery
-  return `https://music.youtube.com/search?q=${encodeURIComponent(q)}`
 }
 
 export const DUR_OPTS = [15, 20, 25, 30, 45, 60]
@@ -86,10 +58,25 @@ export type HistoryEntry = {
 
 export const HISTORY_KEY = 'hd_history'
 
-/** Session-only background loops (focus vs break) — wired in HitsDifferentApp (no UI). */
+/** Local MP3s in `public/audio/` — unsigned session demo audio in HitsDifferentApp. */
+export const LOFI_DEMO_FOCUS_MP3 = '/audio/lofi-study-calm-112191.mp3' as const
+export const HYPE_DEMO_FOCUS_MP3 = '/audio/hype-drill-438398.mp3' as const
+export const EDM_DEMO_FOCUS_MP3 = '/audio/edm-brazilian-phonk-505181.mp3' as const
+export const JAZZ_DEMO_FOCUS_MP3 = '/audio/jazz-moment-14023.mp3' as const
+export const CLASSICAL_DEMO_FOCUS_MP3 = '/audio/chopin-ballade-2-op38.mp3' as const
+export const ACOUSTIC_DEMO_FOCUS_MP3 = '/audio/acoustic-summer-walk-152722.mp3' as const
+
+/** Unsigned-session break loop (jazz demo) — focus URLs come from `sessionDemoFocusSrc`. */
 export const SESSION_DEMO_AUDIO = {
-  focus:
-    'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Local%20Forecast%20-%20Elevator.mp3',
-  break:
-    'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Sneaky%20Snitch.mp3',
+  break: JAZZ_DEMO_FOCUS_MP3,
 } as const
+
+export function sessionDemoFocusSrc(vibe: Vibe): string {
+  if (vibe === 'LO-FI') return LOFI_DEMO_FOCUS_MP3
+  if (vibe === 'HYPE') return HYPE_DEMO_FOCUS_MP3
+  if (vibe === 'JAZZ') return JAZZ_DEMO_FOCUS_MP3
+  if (vibe === 'EDM') return EDM_DEMO_FOCUS_MP3
+  if (vibe === 'CLASSICAL') return CLASSICAL_DEMO_FOCUS_MP3
+  if (vibe === 'ACOUSTIC') return ACOUSTIC_DEMO_FOCUS_MP3
+  return LOFI_DEMO_FOCUS_MP3
+}
