@@ -225,12 +225,22 @@ function nextRemainingAfterSecond(
 
 const DEMO_LOOP_VOL = 0.32
 
+function pauseDemoAudio(el: HTMLAudioElement | null): void {
+  if (!el) return
+  el.pause()
+  try {
+    el.currentTime = 0
+  } catch {
+    /* ignore */
+  }
+}
+
 function playDemoFocusIntro(
   focusEl: HTMLAudioElement | null,
   breakEl: HTMLAudioElement | null,
 ): void {
   if (!focusEl || !breakEl) return
-  breakEl.pause()
+  pauseDemoAudio(breakEl)
   focusEl.volume = DEMO_LOOP_VOL
   void focusEl.play().catch(() => {})
 }
@@ -604,25 +614,34 @@ export default function HitsDifferentApp() {
     return () => document.removeEventListener('keydown', onKey)
   }, [togglePause, view])
 
+  /** Stopping previous `src` when the vibe changes avoids two loops overlapping (same elements, new files). */
+  useEffect(() => {
+    const focusEl = demoFocusAudioRef.current
+    const breakEl = demoBreakAudioRef.current
+    if (!focusEl || !breakEl) return
+    pauseDemoAudio(focusEl)
+    pauseDemoAudio(breakEl)
+  }, [selectedVibe])
+
   useEffect(() => {
     const focusEl = demoFocusAudioRef.current
     const breakEl = demoBreakAudioRef.current
     if (!focusEl || !breakEl) return
 
     if (view !== 'session' || paused || doneOpen || isSignedIn) {
-      focusEl.pause()
-      breakEl.pause()
+      pauseDemoAudio(focusEl)
+      pauseDemoAudio(breakEl)
       return
     }
 
     const wantBreak = timerMode === 'BREAK'
 
     if (wantBreak) {
-      focusEl.pause()
+      pauseDemoAudio(focusEl)
       breakEl.volume = DEMO_LOOP_VOL
       void breakEl.play().catch(() => {})
     } else {
-      breakEl.pause()
+      pauseDemoAudio(breakEl)
       focusEl.volume = DEMO_LOOP_VOL
       void focusEl.play().catch(() => {})
     }
@@ -638,7 +657,6 @@ export default function HitsDifferentApp() {
     <TickerWheelProvider>
     <div className="box-border min-h-svh w-full max-w-[100vw] overflow-x-hidden bg-hd-bg font-sans text-white antialiased select-none lg:h-svh lg:overflow-hidden">
       <audio
-        key={demoFocusSrc}
         ref={demoFocusAudioRef}
         className="sr-only"
         src={demoFocusSrc}
@@ -647,7 +665,6 @@ export default function HitsDifferentApp() {
         aria-hidden
       />
       <audio
-        key={demoBreakSrc}
         ref={demoBreakAudioRef}
         className="sr-only"
         src={demoBreakSrc}

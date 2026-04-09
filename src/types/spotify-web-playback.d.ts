@@ -13,6 +13,8 @@ export type SpotifyPlayerInstance = {
   addListener: (event: string, cb: (...args: unknown[]) => void) => void
   removeListener: (event: string, cb?: (...args: unknown[]) => void) => void
   activateElement?: () => Promise<void>
+  /** Stops current Web Playback output before starting a new context (avoids brief overlap). */
+  pause?: () => Promise<void>
 }
 
 type SpotifyPlayerCtor = new (options: {

@@ -52,6 +52,8 @@ export function SpotifyWebPlayer({
 
   const userStartedPlaybackRef = useRef(false)
   const lastPlayedUriRef = useRef<string | null>(null)
+  /** Only the latest `performPlay` may commit; avoids overlap when context changes quickly. */
+  const playGenerationRef = useRef(0)
   const contextUriRef = useRef(contextUri)
   contextUriRef.current = contextUri
 
@@ -70,8 +72,10 @@ export function SpotifyWebPlayer({
       return false
     }
 
+    const generation = ++playGenerationRef.current
     setBusy(true)
     try {
+      await player.pause?.().catch(() => {})
       await player.activateElement?.()
       const res = await fetch('/api/spotify/player/play', {
         method: 'POST',
@@ -94,6 +98,7 @@ export function SpotifyWebPlayer({
         const j = (await res.json().catch(() => ({}))) as { detail?: string; error?: string }
         throw new Error(j.detail || j.error || res.statusText)
       }
+      if (generation !== playGenerationRef.current) return false
       lastPlayedUriRef.current = uri
       userStartedPlaybackRef.current = true
       return true
