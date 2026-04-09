@@ -29,6 +29,9 @@ function loadSpotifySdk(): Promise<void> {
 const BTN_CLS =
   'font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/55 underline decoration-white/25 underline-offset-2 transition-colors hover:text-white hover:decoration-white/50 disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline'
 
+/** Debounce rapid vibe changes so only the last playlist is sent to Spotify. */
+const CONTEXT_RESYNC_MS = 80
+
 type Props = {
   enabled: boolean
   contextUri: string | null
@@ -47,11 +50,61 @@ export function SpotifyWebPlayer({
   const [ready, setReady] = useState(false)
   const [busy, setBusy] = useState(false)
 
+  const userStartedPlaybackRef = useRef(false)
+  const lastPlayedUriRef = useRef<string | null>(null)
+  const contextUriRef = useRef(contextUri)
+  contextUriRef.current = contextUri
+
   const onSdkPlayingChangeRef = useRef(onSdkPlayingChange)
   onSdkPlayingChangeRef.current = onSdkPlayingChange
 
   const onErrorRef = useRef(onError)
   onErrorRef.current = onError
+
+  const performPlay = useCallback(async (uri: string): Promise<boolean> => {
+    if (!uri) return false
+    const deviceId = deviceIdRef.current
+    const player = playerRef.current
+    if (!deviceId || !player) {
+      onErrorRef.current?.('Spotify player not ready yet')
+      return false
+    }
+
+    setBusy(true)
+    try {
+      await player.activateElement?.()
+      const res = await fetch('/api/spotify/player/play', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId, contextUri: uri }),
+      })
+      if (process.env.NODE_ENV === 'development') {
+        const peek = await res.clone().text()
+        try {
+          console.log(
+            '[hits-different] POST /api/spotify/player/play',
+            res.status,
+            peek ? JSON.parse(peek) : '(empty)',
+          )
+        } catch {
+          console.log('[hits-different] POST /api/spotify/player/play', res.status, peek.slice(0, 400))
+        }
+      }
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { detail?: string; error?: string }
+        throw new Error(j.detail || j.error || res.statusText)
+      }
+      lastPlayedUriRef.current = uri
+      userStartedPlaybackRef.current = true
+      return true
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Playback failed'
+      onErrorRef.current?.(msg.length > 80 ? 'Could not start Spotify playback' : msg)
+      return false
+    } finally {
+      setBusy(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (!enabled) {
@@ -59,6 +112,8 @@ export function SpotifyWebPlayer({
       playerRef.current = null
       deviceIdRef.current = null
       setReady(false)
+      userStartedPlaybackRef.current = false
+      lastPlayedUriRef.current = null
       onSdkPlayingChangeRef.current(false)
       return
     }
@@ -139,50 +194,33 @@ export function SpotifyWebPlayer({
       p?.disconnect()
       deviceIdRef.current = null
       setReady(false)
+      userStartedPlaybackRef.current = false
+      lastPlayedUriRef.current = null
       onSdkPlayingChangeRef.current(false)
     }
   }, [enabled])
 
   const playInBrowser = useCallback(async () => {
-    if (!contextUri || busy) return
-    const deviceId = deviceIdRef.current
-    const player = playerRef.current
-    if (!deviceId || !player) {
-      onErrorRef.current?.('Spotify player not ready yet')
-      return
-    }
+    const uri = contextUriRef.current
+    if (!uri || busy) return
+    await performPlay(uri)
+  }, [busy, performPlay])
 
-    setBusy(true)
-    try {
-      await player.activateElement?.()
-      const res = await fetch('/api/spotify/player/play', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deviceId, contextUri }),
-      })
-      if (process.env.NODE_ENV === 'development') {
-        const peek = await res.clone().text()
-        try {
-          console.log(
-            '[hits-different] POST /api/spotify/player/play',
-            res.status,
-            peek ? JSON.parse(peek) : '(empty)',
-          )
-        } catch {
-          console.log('[hits-different] POST /api/spotify/player/play', res.status, peek.slice(0, 400))
-        }
-      }
-      if (!res.ok) {
-        const j = (await res.json().catch(() => ({}))) as { detail?: string; error?: string }
-        throw new Error(j.detail || j.error || res.statusText)
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Playback failed'
-      onErrorRef.current?.(msg.length > 80 ? 'Could not start Spotify playback' : msg)
-    } finally {
-      setBusy(false)
-    }
-  }, [busy, contextUri])
+  useEffect(() => {
+    if (!enabled || !ready || !contextUri) return
+    if (!userStartedPlaybackRef.current) return
+    if (lastPlayedUriRef.current === contextUri) return
+
+    const t = window.setTimeout(() => {
+      const uri = contextUriRef.current
+      if (!uri) return
+      if (!userStartedPlaybackRef.current) return
+      if (lastPlayedUriRef.current === uri) return
+      void performPlay(uri)
+    }, CONTEXT_RESYNC_MS)
+
+    return () => clearTimeout(t)
+  }, [contextUri, enabled, performPlay, ready])
 
   if (!contextUri) return null
 

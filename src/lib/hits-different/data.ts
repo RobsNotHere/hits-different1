@@ -66,11 +66,6 @@ export const JAZZ_DEMO_FOCUS_MP3 = '/audio/jazz-moment-14023.mp3' as const
 export const CLASSICAL_DEMO_FOCUS_MP3 = '/audio/chopin-ballade-2-op38.mp3' as const
 export const ACOUSTIC_DEMO_FOCUS_MP3 = '/audio/acoustic-summer-walk-152722.mp3' as const
 
-/** Unsigned-session break loop (jazz demo) — focus URLs come from `sessionDemoFocusSrc`. */
-export const SESSION_DEMO_AUDIO = {
-  break: JAZZ_DEMO_FOCUS_MP3,
-} as const
-
 export function sessionDemoFocusSrc(vibe: Vibe): string {
   if (vibe === 'LO-FI') return LOFI_DEMO_FOCUS_MP3
   if (vibe === 'HYPE') return HYPE_DEMO_FOCUS_MP3
@@ -79,4 +74,9 @@ export function sessionDemoFocusSrc(vibe: Vibe): string {
   if (vibe === 'CLASSICAL') return CLASSICAL_DEMO_FOCUS_MP3
   if (vibe === 'ACOUSTIC') return ACOUSTIC_DEMO_FOCUS_MP3
   return LOFI_DEMO_FOCUS_MP3
+}
+
+/** Unsigned-session break loop per vibe (same clips as focus until dedicated break assets exist). */
+export function sessionDemoBreakSrc(vibe: Vibe): string {
+  return sessionDemoFocusSrc(vibe)
 }

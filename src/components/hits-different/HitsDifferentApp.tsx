@@ -26,7 +26,7 @@ import {
   BREAK_OPTS,
   DUR_OPTS,
   HISTORY_KEY,
-  SESSION_DEMO_AUDIO,
+  sessionDemoBreakSrc,
   sessionDemoFocusSrc,
   SESSION_OPTS,
   type HistoryEntry,
@@ -367,11 +367,9 @@ export default function HitsDifferentApp() {
     if (!pip || pip.closed) return
     const timeEl = pip.document.getElementById('pip-time')
     const modeEl = pip.document.getElementById('pip-mode')
-    const pausedEl = pip.document.getElementById('pip-paused')
     const toggleBtn = pip.document.getElementById('pip-toggle')
     if (timeEl) timeEl.textContent = fmt(remaining)
     if (modeEl) modeEl.textContent = timerMode
-    if (pausedEl) pausedEl.textContent = paused ? 'PAUSED' : ''
     if (toggleBtn) toggleBtn.textContent = paused ? 'Resume' : 'Pause'
   }, [remaining, timerMode, paused])
 
@@ -407,8 +405,7 @@ export default function HitsDifferentApp() {
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;box-sizing:border-box;padding:12px;font-family:ui-monospace,monospace;">
         <div id="pip-time" style="font-size:40px;font-weight:600;letter-spacing:0.06em;line-height:1;">${fmt(remaining)}</div>
         <div id="pip-mode" style="margin-top:6px;font-size:11px;letter-spacing:0.25em;opacity:0.45;">${timerMode}</div>
-        <div id="pip-paused" style="margin-top:4px;min-height:14px;font-size:10px;letter-spacing:0.15em;opacity:0.65;">${paused ? 'PAUSED' : ''}</div>
-        <button type="button" id="pip-toggle" style="margin-top:14px;display:inline-flex;align-items:center;justify-content:center;padding:8px 22px;border-radius:4px;border:1px solid rgba(255,255,255,0.35);background:#fff;color:#0c0c0c;font-family:inherit;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">
+        <button type="button" id="pip-toggle" style="margin-top:22px;display:inline-flex;align-items:center;justify-content:center;padding:8px 22px;border-radius:4px;border:1px solid rgba(255,255,255,0.35);background:#fff;color:#0c0c0c;font-family:inherit;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">
           ${paused ? 'Resume' : 'Pause'}
         </button>
       </div>`
@@ -632,6 +629,7 @@ export default function HitsDifferentApp() {
   }, [view, timerMode, paused, doneOpen, isSignedIn, selectedVibe])
 
   const demoFocusSrc = sessionDemoFocusSrc(selectedVibe as Vibe)
+  const demoBreakSrc = sessionDemoBreakSrc(selectedVibe as Vibe)
 
   const isBreakTint = view === 'session' && curSession % 2 === 0
   const isDoneTint = doneOpen
@@ -649,9 +647,10 @@ export default function HitsDifferentApp() {
         aria-hidden
       />
       <audio
+        key={demoBreakSrc}
         ref={demoBreakAudioRef}
         className="sr-only"
-        src={SESSION_DEMO_AUDIO.break}
+        src={demoBreakSrc}
         loop
         preload="auto"
         aria-hidden
