@@ -2,6 +2,17 @@
 
 import { cn } from '@/lib/cn'
 import {
+  ArrowRight,
+  ChevronDown,
+  Download,
+  Pause,
+  PictureInPicture2,
+  Play,
+  RotateCcw,
+  Settings,
+  X,
+} from 'lucide-react'
+import {
   useCallback,
   useEffect,
   useRef,
@@ -80,9 +91,9 @@ function SampleMixLinks({
 }
 
 const TIMER_SELECT_LABEL_CLS =
-  'shrink-0 text-start font-[family-name:var(--font-space-mono)] text-[9px] uppercase tracking-wide text-white/55'
+  'w-full justify-self-stretch text-end font-[family-name:var(--font-space-mono)] text-[9px] uppercase leading-none tracking-wide text-white/55 whitespace-nowrap'
 const TIMER_SELECT_CLS =
-  'max-w-[120px] w-[120px] cursor-pointer appearance-none rounded border border-white/20 bg-black/50 py-1 pl-2 pr-7 text-left font-[family-name:var(--font-space-mono)] text-[11px] text-white outline-none focus:border-white/50'
+  'box-border h-8 w-full min-w-0 max-w-[120px] cursor-pointer appearance-none rounded border border-white/20 bg-black/50 py-0 pl-2 pr-7 text-left font-[family-name:var(--font-space-mono)] text-[11px] leading-none text-white outline-none focus:border-white/50'
 
 function TimerSelectRow({
   id,
@@ -133,14 +144,15 @@ function TimerSelectRow({
   return (
     <div
       className={cn(
-        'flex items-center justify-start gap-3',
+        /* Fixed label col matches longest copy (“Rounds”); same grid on every row so selects line up. */
+        'grid w-full grid-cols-[4.75rem_minmax(0,120px)] items-center gap-x-3',
         marginBottom && 'mb-2.5',
       )}
     >
       <label htmlFor={id} className={TIMER_SELECT_LABEL_CLS}>
         {label}
       </label>
-      <div className="relative shrink-0">
+      <div className="relative w-full min-w-0 max-w-[120px] justify-self-start">
         <select
           id={id}
           className={TIMER_SELECT_CLS}
@@ -156,15 +168,14 @@ function TimerSelectRow({
         >
           {children}
         </select>
-        <span
+        <ChevronDown
           className={cn(
-            'pointer-events-none absolute right-2 top-1/2 block -translate-y-1/2 text-[8px] leading-none text-white/40 transition-transform duration-200 ease-out',
-            !listOpen && 'rotate-180',
+            'pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2 text-white/45 transition-transform duration-200 ease-out',
+            listOpen && 'rotate-180',
           )}
           aria-hidden
-        >
-          ▼
-        </span>
+          strokeWidth={2}
+        />
       </div>
     </div>
   )
@@ -575,7 +586,7 @@ export default function HitsDifferentApp() {
     })
     const blob = new Blob([rows.join('\n')], { type: 'text/csv' })
     triggerBlobDownload(blob, 'hits-different-sessions.csv')
-    showToast('Session log exported ✓')
+    showToast('Session log exported')
   }, [sessionHistory, showToast])
 
   const exportAlbumCover = useCallback(() => {
@@ -595,7 +606,7 @@ export default function HitsDifferentApp() {
     canvas.toBlob((blob) => {
       if (!blob) return
       triggerBlobDownload(blob, 'hits-different-cover.png')
-      showToast('Album cover saved ✓')
+      showToast('Album cover saved')
     })
   }, [selectedVibe, showToast, taskText])
 
@@ -682,10 +693,11 @@ export default function HitsDifferentApp() {
             <button
               type="button"
               id="hdSessionLogNav"
-              className={HD_TOP_BAR_BTN}
+              className={cn(HD_TOP_BAR_BTN, 'gap-1')}
               onClick={() => setHistoryOpen(true)}
             >
-              SESSION LOG →
+              SESSION LOG
+              <ArrowRight className="size-3 shrink-0 opacity-85" strokeWidth={2.25} aria-hidden />
             </button>
             {status === 'authenticated' ? (
               <button
@@ -745,10 +757,11 @@ export default function HitsDifferentApp() {
           </div>
           <button
             type="button"
-            className="cursor-pointer border-0 bg-transparent text-lg text-white/50 hover:text-white"
+            className="cursor-pointer border-0 bg-transparent p-0.5 text-white/50 hover:text-white"
             onClick={() => setHistoryOpen(false)}
+            aria-label="Close session log"
           >
-            ✕
+            <X className="size-5" strokeWidth={2} aria-hidden />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-3.5 [scrollbar-color:rgba(255,255,255,0.1)_transparent] [scrollbar-width:thin]" id="histList">
@@ -780,10 +793,11 @@ export default function HitsDifferentApp() {
         </div>
         <button
           type="button"
-          className="mx-5 mb-3.5 cursor-pointer rounded border border-white/20 bg-white/10 px-2.5 py-2.5 text-center font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide text-white transition-colors hover:bg-white/15"
+          className="mx-5 mb-3.5 inline-flex cursor-pointer items-center justify-center gap-2 self-center rounded border border-white/20 bg-white/10 px-2.5 py-2.5 font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide text-white transition-colors hover:bg-white/15"
           onClick={exportHistory}
         >
-          ⬇ EXPORT SESSION LOG
+          <Download className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+          EXPORT SESSION LOG
         </button>
       </div>
 
@@ -848,10 +862,10 @@ export default function HitsDifferentApp() {
                     onClick={() => launch()}
                   >
                     <span
-                      className="inline-flex size-full items-center justify-center pl-[2px] pt-[1px]"
+                      className="inline-flex size-full items-center justify-center pl-px"
                       aria-hidden
                     >
-                      ▶
+                      <Play className="size-[15px]" strokeWidth={2.5} aria-hidden />
                     </span>
                   </button>
                 </div>
@@ -868,11 +882,11 @@ export default function HitsDifferentApp() {
                     aria-controls="timerSettingsPanel"
                     onClick={() => setTimerSettingsOpen((o) => !o)}
                   >
-                    ⚙
+                    <Settings className="size-4" strokeWidth={2} aria-hidden />
                   </button>
                   {timerSettingsOpen ? (
                     <div
-                      className="absolute left-0 top-[calc(100%+8px)] z-[60] w-[min(calc(100vw-2.5rem),220px)] rounded border border-white/15 bg-[#141414] p-3 text-left shadow-[0_12px_40px_rgba(0,0,0,0.55)]"
+                      className="absolute left-0 top-[calc(100%+8px)] z-[60] w-[min(calc(100vw-2.5rem),220px)] rounded border border-white/15 bg-[#141414] px-3 py-2.5 text-left shadow-[0_12px_40px_rgba(0,0,0,0.55)]"
                       id="timerSettingsPanel"
                       role="dialog"
                       aria-modal="true"
@@ -1073,17 +1087,19 @@ export default function HitsDifferentApp() {
             <div className="mt-5 flex w-full max-w-[min(100%,20rem)] flex-col gap-2.5 sm:max-w-none sm:flex-row sm:justify-center">
               <button
                 type="button"
-                className="cursor-pointer rounded border-[1.5px] border-white/30 bg-transparent px-5 py-2.5 font-[family-name:var(--font-bebas)] text-lg tracking-wide text-white transition-colors hover:border-white"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border-[1.5px] border-white/30 bg-transparent px-5 py-2.5 font-[family-name:var(--font-bebas)] text-lg tracking-wide text-white transition-colors hover:border-white"
                 onClick={exportAlbumCover}
               >
-                ⬇ SAVE COVER
+                <Download className="size-4 shrink-0" strokeWidth={2} aria-hidden />
+                SAVE COVER
               </button>
               <button
                 type="button"
-                className="cursor-pointer rounded border-0 bg-white px-5 py-2.5 font-[family-name:var(--font-bebas)] text-lg tracking-wide text-hd-bg transition-colors hover:bg-zinc-200"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border-0 bg-white px-5 py-2.5 font-[family-name:var(--font-bebas)] text-lg tracking-wide text-hd-bg transition-colors hover:bg-zinc-200"
                 onClick={restartSession}
               >
-                NEW SESSION →
+                NEW SESSION
+                <ArrowRight className="size-4 shrink-0" strokeWidth={2} aria-hidden />
               </button>
             </div>
           </div>
@@ -1114,15 +1130,16 @@ export default function HitsDifferentApp() {
           <div className="relative z-[5] mt-5 flex flex-wrap justify-start gap-2">
             <button
               type="button"
-              className="cursor-pointer rounded border border-white/20 bg-white/10 px-4 py-1.5 font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide text-white transition-colors hover:bg-white/15"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded border border-white/20 bg-white/10 px-4 py-1.5 font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide text-white transition-colors hover:bg-white/15"
               onClick={restartSession}
             >
-              ↺ RESET
+              <RotateCcw className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+              RESET
             </button>
             <button
               type="button"
               className={cn(
-                'cursor-pointer rounded border px-4 py-1.5 font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide transition-colors',
+                'inline-flex cursor-pointer items-center gap-1.5 rounded border px-4 py-1.5 font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide transition-colors',
                 paused
                   ? 'border-white/20 bg-white/10 text-white hover:bg-white/15'
                   : 'border-transparent bg-white text-hd-bg hover:bg-zinc-200',
@@ -1130,15 +1147,26 @@ export default function HitsDifferentApp() {
               id="pauseBtn"
               onClick={togglePause}
             >
-              {paused ? '▶ RESUME' : '⏸ PAUSE'}
+              {paused ? (
+                <>
+                  <Play className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+                  RESUME
+                </>
+              ) : (
+                <>
+                  <Pause className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+                  PAUSE
+                </>
+              )}
             </button>
             <button
               type="button"
-              className="cursor-pointer rounded border border-white/20 bg-white/10 px-4 py-1.5 font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide text-white transition-colors hover:bg-white/15"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded border border-white/20 bg-white/10 px-4 py-1.5 font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide text-white transition-colors hover:bg-white/15"
               title="Floating timer window (Chrome / Edge)"
               onClick={() => void openTimerPictureInPicture()}
             >
-              ⛶ PiP
+              <PictureInPicture2 className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+              PiP
             </button>
           </div>
           <div className={HD_STAGE_FOOTER_STACK} id="sessLabel">

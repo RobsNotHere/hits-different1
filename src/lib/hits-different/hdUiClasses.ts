@@ -23,6 +23,13 @@ export const HD_STAGE_FOOTER_LINE =
 export const HD_LEFT_COLUMN_COPYRIGHT =
   'pointer-events-none absolute bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-4 z-[3] sm:left-6 whitespace-nowrap font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide'
 
+/**
+ * Desktop main grid: three tracks with the center (ticker) fixed at 1/10 of the row.
+ * The remaining 9/10 splits by the golden ratio φ so left:right ≈ φ:1 (55.6% : 34.4% of full width).
+ * Fr weights sum to 10 so the ticker stays 10% like the previous 5:1:4 layout, but outer bands are golden.
+ */
+export const HD_MAIN_GRID_COLS_CLASS = 'lg:grid-cols-[5.562fr_1fr_3.438fr]'
+
 export function hdMainGridShellClass(
   mode: 'setup' | 'session',
   view: 'setup' | 'session',
@@ -30,7 +37,8 @@ export function hdMainGridShellClass(
   const active = view === mode
   return cn(
     mode === 'setup' ? 'z-0' : 'z-[1]',
-    'flex flex-col lg:absolute lg:inset-0 lg:grid lg:min-h-0 lg:grid-cols-[5fr_1fr_4fr]',
+    'flex flex-col lg:absolute lg:inset-0 lg:grid lg:min-h-0',
+    HD_MAIN_GRID_COLS_CLASS,
     active
       ? 'opacity-100'
       : 'pointer-events-none opacity-0 max-lg:hidden lg:pointer-events-none',

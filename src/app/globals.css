@@ -8,6 +8,12 @@
   --color-hd-break: #1a3040;
   --color-hd-done: #1a0a2a;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /** Golden ratio φ — used for layout math / future framing utilities */
+  --hd-phi: 1.6180339887;
+  /** Minor segment as a fraction of a golden-split pair: 1/(1+φ) ≈ 0.382 */
+  --hd-phi-minor: 0.3819660113;
+  /** Major segment: φ/(1+φ) ≈ 0.618 */
+  --hd-phi-major: 0.6180339887;
 }
 
 @layer base {
