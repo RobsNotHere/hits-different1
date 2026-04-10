@@ -676,9 +676,9 @@ export default function HitsDifferentApp() {
         className="fixed left-3 right-3 top-[max(1rem,env(safe-area-inset-top))] z-[200] flex flex-col gap-1.5 sm:left-6 sm:right-6"
         id="hdTopBar"
       >
-        <div className="flex w-full min-w-0 flex-nowrap items-center justify-between gap-x-3 gap-y-1">
+        <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <HdWordmark />
-          <div className="flex min-w-0 shrink-0 flex-nowrap items-center justify-end gap-x-2.5 sm:gap-x-3.5">
+          <div className="flex min-w-0 flex-col items-end gap-y-2 sm:flex-row sm:items-center sm:justify-end sm:gap-x-2.5 sm:gap-y-0 md:gap-x-3.5">
             <button
               type="button"
               id="hdSessionLogNav"
