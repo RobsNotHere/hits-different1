@@ -37,7 +37,7 @@ import {
 import { spotifyPlaylistContextUri } from '@/lib/hits-different/spotifyPlaylistUri'
 import {
   HD_COLUMN_STACK_GAP,
-  HD_COPYRIGHT_LINE,
+  HD_LEFT_COLUMN_COPYRIGHT,
   HD_STAGE_FOOTER_LINE,
   HD_STAGE_FOOTER_STACK,
   HD_TIMER_STAGE_COLUMN,
@@ -793,7 +793,7 @@ export default function HitsDifferentApp() {
           className="relative z-[5] flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-hd-gold px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[4.5rem] transition-colors duration-500 sm:px-6 lg:min-h-0 lg:flex-none lg:pb-5 lg:pt-5"
           id="s1Left"
         >
-          <div className="flex h-full min-h-0 flex-col overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:w-0">
+          <div className="flex h-full min-h-0 flex-col overflow-y-auto overflow-x-hidden pb-10 [scrollbar-width:none] [&::-webkit-scrollbar]:w-0">
             <div className="flex min-h-full w-full flex-1 flex-col items-center justify-center px-1 py-2">
               <div
                 className={cn(
@@ -931,6 +931,9 @@ export default function HitsDifferentApp() {
               </div>
             </div>
           </div>
+          <p className={cn(HD_LEFT_COLUMN_COPYRIGHT, 'text-black/45')} aria-hidden>
+            © {new Date().getFullYear()} Hits Different
+          </p>
         </div>
 
         <TickerColumn
@@ -953,9 +956,6 @@ export default function HitsDifferentApp() {
             <div className={HD_STAGE_FOOTER_LINE}>
               {totalSessions} POMODORO SESSIONS
             </div>
-            <p className={HD_COPYRIGHT_LINE} aria-hidden>
-              © {new Date().getFullYear()} Hits Different
-            </p>
           </div>
         </div>
       </div>
@@ -971,7 +971,7 @@ export default function HitsDifferentApp() {
           )}
           id="s2Left"
         >
-          <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center overflow-y-auto overflow-x-hidden px-0 py-2">
+          <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center overflow-y-auto overflow-x-hidden px-0 py-2 pb-10">
             <div
               className={cn(
                 'flex w-full max-w-[280px] flex-col items-start text-start',
@@ -1038,6 +1038,16 @@ export default function HitsDifferentApp() {
               </div>
             </div>
           </div>
+
+          <p
+            className={cn(
+              HD_LEFT_COLUMN_COPYRIGHT,
+              isBreakTint || isDoneTint ? 'text-white/35' : 'text-black/45',
+            )}
+            aria-hidden
+          >
+            © {new Date().getFullYear()} Hits Different
+          </p>
 
           <div
             className={cn(
@@ -1135,9 +1145,6 @@ export default function HitsDifferentApp() {
             <div className={HD_STAGE_FOOTER_LINE}>
               SESSION {curSession} OF {totalSessions}
             </div>
-            <p className={HD_COPYRIGHT_LINE} aria-hidden>
-              © {new Date().getFullYear()} Hits Different
-            </p>
           </div>
         </div>
       </div>
