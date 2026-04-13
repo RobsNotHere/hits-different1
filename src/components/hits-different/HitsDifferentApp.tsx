@@ -15,9 +15,9 @@ import {
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
-  type MutableRefObject,
   type ReactNode,
 } from 'react'
 import { useUser } from '@/context/UserContext'
@@ -30,7 +30,6 @@ import {
   TickerWheelProvider,
   type VibeHighlightSource,
 } from '@/components/hits-different/HitsDifferentTicker'
-import { TimerStageRings } from '@/components/hits-different/TimerStageRings'
 import { overlayCoverText } from '@/lib/hits-different/canvas'
 import { triggerBlobDownload } from '@/lib/hits-different/downloadBlob'
 import {
@@ -49,17 +48,52 @@ import { spotifyPlaylistContextUri } from '@/lib/hits-different/spotifyPlaylistU
 import {
   HD_COLUMN_STACK_GAP,
   HD_LEFT_COLUMN_COPYRIGHT,
-  HD_STAGE_FOOTER_LINE,
-  HD_STAGE_FOOTER_STACK,
-  HD_TIMER_STAGE_COLUMN,
   HD_TOP_BAR_BTN,
   hdMainGridShellClass,
 } from '@/lib/hits-different/hdUiClasses'
 
-function fmt(totalSeconds: number) {
-  const m = Math.floor(totalSeconds / 60)
-  const s = totalSeconds % 60
+const HD_CAFE_BG_URL = '/images/cafe-des-etudes-bg.png'
+
+/** Wall-clock ms → `MM:SS`. */
+function fmtHires(totalMs: number) {
+  const clamped = Math.max(0, Math.floor(totalMs))
+  const m = Math.floor(clamped / 60000)
+  const s = Math.floor((clamped % 60000) / 1000)
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
+/** Focus and break both use wall-clock `endAt` so the main clock counts down (Pomodoro). */
+type PhaseAnchor = {
+  kind: 'focus' | 'break'
+  endAt: number
+  pauseAt: number | null
+}
+
+type TimerAnchor = PhaseAnchor
+
+function getPhaseLeftMs(a: PhaseAnchor, now: number): number {
+  const t = a.pauseAt ?? now
+  return Math.max(0, a.endAt - t)
+}
+
+function readHiresClock(
+  anchor: TimerAnchor | null,
+  view: 'setup' | 'session',
+  doneOpen: boolean,
+): string {
+  if (!anchor || view !== 'session' || doneOpen) return '00:00'
+  const now = anchor.pauseAt ?? Date.now()
+  return fmtHires(getPhaseLeftMs(anchor, now))
+}
+
+function readFaviconSec(
+  anchor: TimerAnchor | null,
+  view: 'setup' | 'session',
+  doneOpen: boolean,
+): number {
+  if (!anchor || view !== 'session' || doneOpen) return 0
+  const now = anchor.pauseAt ?? Date.now()
+  return Math.floor(getPhaseLeftMs(anchor, now) / 1000)
 }
 
 const SAMPLE_MIX_LINK_CLS =
@@ -181,64 +215,40 @@ function TimerSelectRow({
   )
 }
 
-function DotsRow({
-  total,
-  current,
-  id,
-}: {
-  total: number
-  current: number
-  id: string
-}) {
-  return (
-    <div className="relative z-[5] mt-[18px] flex justify-start gap-2" id={id}>
-      {Array.from({ length: total }, (_, i) => (
-        <div
-          key={i}
-          className={cn(
-            'size-[9px] rounded-full transition-colors duration-300',
-            i < current - 1 && 'bg-white/40',
-            i === current - 1 && 'bg-white',
-            i > current - 1 && 'bg-white/14',
-          )}
-        />
-      ))}
-    </div>
-  )
-}
-
-/**
- * One tick of the pomodoro interval: decrement seconds, or clear the interval and
- * schedule the next block / finish. Extracted so `beginBlock` stays flat and this
- * logic is testable by inspection.
- */
-function nextRemainingAfterSecond(
-  r: number,
-  sessionNum: number,
-  totalSessions: number,
-  intervalRef: MutableRefObject<number | null>,
-  beginBlock: (n: number) => void,
-  finish: (n: number) => void,
-): number {
-  if (r > 1) return r - 1
-
-  if (intervalRef.current) {
-    clearInterval(intervalRef.current)
-    intervalRef.current = null
+/** Soft sine ping when ~60s remain in a focus phase (requires user gesture for AudioContext on some browsers). */
+function playSubtleLapApproachChime(): void {
+  try {
+    if (typeof window === 'undefined') return
+    const Ctor =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!Ctor) return
+    const ctx = new Ctor()
+    const osc = ctx.createOscillator()
+    const g = ctx.createGain()
+    osc.connect(g)
+    g.connect(ctx.destination)
+    osc.frequency.value = 880
+    osc.type = 'sine'
+    const t0 = ctx.currentTime
+    g.gain.setValueAtTime(0.0001, t0)
+    g.gain.exponentialRampToValueAtTime(0.055, t0 + 0.02)
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.32)
+    osc.start(t0)
+    osc.stop(t0 + 0.35)
+    void ctx.resume().catch(() => {})
+  } catch {
+    /* ignore */
   }
-  if (sessionNum < totalSessions) {
-    window.setTimeout(() => beginBlock(sessionNum + 1), 0)
-  } else {
-    window.setTimeout(() => finish(sessionNum), 0)
-  }
-  return 0
 }
 
 const DEMO_LOOP_VOL = 0.32
 
-function pauseDemoAudio(el: HTMLAudioElement | null): void {
+/** Pause demo loop. Use `resetPosition` when switching vibe or focus/break so the next play starts clean; omit for timer pause so resume continues mid-track. */
+function pauseDemoAudio(el: HTMLAudioElement | null, resetPosition = false): void {
   if (!el) return
   el.pause()
+  if (!resetPosition) return
   try {
     el.currentTime = 0
   } catch {
@@ -251,7 +261,7 @@ function playDemoFocusIntro(
   breakEl: HTMLAudioElement | null,
 ): void {
   if (!focusEl || !breakEl) return
-  pauseDemoAudio(breakEl)
+  pauseDemoAudio(breakEl, true)
   focusEl.volume = DEMO_LOOP_VOL
   void focusEl.play().catch(() => {})
 }
@@ -272,7 +282,8 @@ export default function HitsDifferentApp() {
   const [totalSessions, setTotalSessions] = useState(6)
 
   const [curSession, setCurSession] = useState(1)
-  const [remaining, setRemaining] = useState(25 * 60)
+  /** Integer seconds for internal transitions (display / tab title use `hiresLabel`). */
+  const [, setRemaining] = useState(0)
   const [timerMode, setTimerMode] = useState('FOCUS')
   const [paused, setPaused] = useState(false)
   const pausedRef = useRef(false)
@@ -280,6 +291,12 @@ export default function HitsDifferentApp() {
   const spotifyDrovePauseRef = useRef(false)
   const browserSpotifyPlayingRef = useRef(false)
   const intervalRef = useRef<number | null>(null)
+  const timerAnchorRef = useRef<TimerAnchor | null>(null)
+  const tickSessionNumRef = useRef(0)
+  const totalSessionsRef = useRef(6)
+  const finishRef = useRef<(n: number) => void>(() => {})
+  const timerTickRef = useRef<() => void>(() => {})
+  const [hiresTick, setHiresTick] = useState(0)
 
   const taskTextRef = useRef('')
   const selectedVibeRef = useRef('LO-FI')
@@ -290,6 +307,10 @@ export default function HitsDifferentApp() {
     selectedVibeRef.current = selectedVibe
     focusMinsRef.current = focusMins
   }, [taskText, selectedVibe, focusMins])
+
+  useEffect(() => {
+    totalSessionsRef.current = totalSessions
+  }, [totalSessions])
 
   const handleVibePick = useCallback(
     (tickerId: string, v: Vibe, duplicateIndex: number) => {
@@ -309,7 +330,6 @@ export default function HitsDifferentApp() {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [toast, setToast] = useState({ msg: '', show: false })
   const [doneOpen, setDoneOpen] = useState(false)
-  const [s2VinylSpin, setS2VinylSpin] = useState(false)
 
   const launchInProgressRef = useRef(false)
   const timerSettingsRef = useRef<HTMLDivElement>(null)
@@ -317,11 +337,29 @@ export default function HitsDifferentApp() {
   const [timerSettingsOpen, setTimerSettingsOpen] = useState(false)
   const demoFocusAudioRef = useRef<HTMLAudioElement>(null)
   const demoBreakAudioRef = useRef<HTMLAudioElement>(null)
+  const lapApproachChimedForBlockRef = useRef<number | null>(null)
 
   const { notice: spotifyPlaybackNotice, accountVerified: spotifyAccountVerified } =
     useSpotifyPlaybackNotice(status)
 
-  useSessionTimerDocumentMeta(view === 'session' && !doneOpen, remaining)
+  const hiresLabel = useMemo(
+    () => readHiresClock(timerAnchorRef.current, view, doneOpen),
+    [hiresTick, view, doneOpen],
+  )
+  const docFaviconSec = useMemo(
+    () => readFaviconSec(timerAnchorRef.current, view, doneOpen),
+    [hiresTick, view, doneOpen],
+  )
+  /** Setup / hidden session column: show chosen focus length (default 25 → 25:00). */
+  const focusLengthPreviewClock = useMemo(
+    () => fmtHires(focusMins * 60 * 1000),
+    [focusMins],
+  )
+  useSessionTimerDocumentMeta(
+    view === 'session' && !doneOpen,
+    hiresLabel,
+    docFaviconSec,
+  )
 
   const pipWindowRef = useRef<Window | null>(null)
   const togglePauseRef = useRef<() => void>(() => {})
@@ -339,15 +377,23 @@ export default function HitsDifferentApp() {
     if (playing) {
       if (!pausedRef.current) {
         spotifyDrovePauseRef.current = true
+        const a = timerAnchorRef.current
+        if (a && a.pauseAt == null) a.pauseAt = Date.now()
         pausedRef.current = true
         setPaused(true)
-        setS2VinylSpin(true)
+        setHiresTick((x) => x + 1)
       }
     } else if (spotifyDrovePauseRef.current) {
       spotifyDrovePauseRef.current = false
+      const a = timerAnchorRef.current
+      if (a && a.pauseAt != null) {
+        const dt = Date.now() - a.pauseAt
+        a.endAt += dt
+        a.pauseAt = null
+      }
       pausedRef.current = false
       setPaused(false)
-      setS2VinylSpin(true)
+      setHiresTick((x) => x + 1)
     }
   }, [])
 
@@ -386,13 +432,20 @@ export default function HitsDifferentApp() {
   const syncPipTimerWindow = useCallback(() => {
     const pip = pipWindowRef.current
     if (!pip || pip.closed) return
-    const timeEl = pip.document.getElementById('pip-time')
-    const modeEl = pip.document.getElementById('pip-mode')
     const toggleBtn = pip.document.getElementById('pip-toggle')
-    if (timeEl) timeEl.textContent = fmt(remaining)
-    if (modeEl) modeEl.textContent = timerMode
+    const clock = readHiresClock(
+      timerAnchorRef.current,
+      viewRef.current,
+      doneOpenRef.current,
+    )
+    const pipMain = pip.document.getElementById('pip-time-main')
+    if (pipMain) pipMain.textContent = clock
+    const timeElLegacy = pip.document.getElementById('pip-time')
+    if (timeElLegacy && !pipMain) {
+      timeElLegacy.textContent = clock
+    }
     if (toggleBtn) toggleBtn.textContent = paused ? 'Resume' : 'Pause'
-  }, [remaining, timerMode, paused])
+  }, [hiresTick, paused])
 
   useEffect(() => {
     syncPipTimerWindow()
@@ -422,10 +475,12 @@ export default function HitsDifferentApp() {
       pip.document.body.style.margin = '0'
       pip.document.body.style.background = '#0c0c0c'
       pip.document.body.style.color = '#e5e5e5'
+      const pipClock = readHiresClock(timerAnchorRef.current, view, doneOpen)
       pip.document.body.innerHTML = `
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;box-sizing:border-box;padding:12px;font-family:ui-monospace,monospace;">
-        <div id="pip-time" style="font-size:40px;font-weight:600;letter-spacing:0.06em;line-height:1;">${fmt(remaining)}</div>
-        <div id="pip-mode" style="margin-top:6px;font-size:11px;letter-spacing:0.25em;opacity:0.45;">${timerMode}</div>
+        <div id="pip-time" style="display:flex;align-items:center;justify-content:center;line-height:1;">
+          <span id="pip-time-main" style="font-size:32px;font-weight:600;letter-spacing:0.04em;">${pipClock}</span>
+        </div>
         <button type="button" id="pip-toggle" style="margin-top:22px;display:inline-flex;align-items:center;justify-content:center;padding:8px 22px;border-radius:4px;border:1px solid rgba(255,255,255,0.35);background:#fff;color:#0c0c0c;font-family:inherit;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">
           ${paused ? 'Resume' : 'Pause'}
         </button>
@@ -444,7 +499,7 @@ export default function HitsDifferentApp() {
     } catch {
       showToast('Picture-in-picture failed or was blocked')
     }
-  }, [paused, remaining, showToast, syncPipTimerWindow, timerMode])
+  }, [paused, view, doneOpen, showToast, syncPipTimerWindow])
 
   const onSpotifyWebError = useCallback((msg: string) => showToast(msg), [showToast])
 
@@ -457,7 +512,8 @@ export default function HitsDifferentApp() {
 
   const finish = useCallback((completedSessionNum: number) => {
     clearTimer()
-    setS2VinylSpin(false)
+    timerAnchorRef.current = null
+    tickSessionNumRef.current = 0
     setPaused(false)
     pausedRef.current = false
     spotifyDrovePauseRef.current = false
@@ -466,7 +522,7 @@ export default function HitsDifferentApp() {
       task: taskTextRef.current,
       emoji: '🎵',
       vibe: selectedVibeRef.current,
-      sessions: completedSessionNum,
+      sessions: Math.ceil(completedSessionNum / 2),
       duration: focusMinsRef.current,
       date: new Date().toLocaleDateString('en-US', {
         month: 'short',
@@ -483,40 +539,93 @@ export default function HitsDifferentApp() {
     setDoneOpen(true)
   }, [clearTimer])
 
+  useEffect(() => {
+    finishRef.current = finish
+  }, [finish])
+
+  const timerTick = useCallback(() => {
+    const a = timerAnchorRef.current
+    const sn = tickSessionNumRef.current
+    if (!a || sn === 0) return
+    if (viewRef.current !== 'session' || doneOpenRef.current) return
+    if (pausedRef.current) return
+
+    const now = Date.now()
+    const total = totalSessionsRef.current
+    const leftMs = getPhaseLeftMs(a, now)
+    const leftSec = Math.max(0, Math.floor(leftMs / 1000))
+    setRemaining(leftSec)
+
+    if (a.kind === 'focus') {
+      const capSec = focusMinsRef.current * 60
+      if (
+        capSec > 60 &&
+        leftSec === 60 &&
+        lapApproachChimedForBlockRef.current !== sn
+      ) {
+        lapApproachChimedForBlockRef.current = sn
+        playSubtleLapApproachChime()
+      }
+    }
+
+    if (leftMs <= 0) {
+      clearTimer()
+      lapApproachChimedForBlockRef.current = null
+      if (sn < total) beginBlockRef.current(sn + 1)
+      else finishRef.current(sn)
+      return
+    }
+    setHiresTick((x) => x + 1)
+  }, [clearTimer])
+
+  useEffect(() => {
+    timerTickRef.current = timerTick
+  }, [timerTick])
+
   const beginBlock = useCallback(
     (sessionNum: number) => {
       clearTimer()
       pausedRef.current = false
       setPaused(false)
       const isBreak = sessionNum % 2 === 0
+      if (!isBreak) lapApproachChimedForBlockRef.current = null
       const sec = isBreak ? breakMins * 60 : focusMins * 60
       setRemaining(sec)
       setTimerMode(isBreak ? 'BREAK' : 'FOCUS')
       setCurSession(sessionNum)
-      setS2VinylSpin(true)
+
+      tickSessionNumRef.current = sessionNum
+      const t0 = Date.now()
+      if (isBreak) {
+        timerAnchorRef.current = {
+          kind: 'break',
+          endAt: t0 + breakMins * 60 * 1000,
+          pauseAt: null,
+        }
+      } else {
+        timerAnchorRef.current = {
+          kind: 'focus',
+          endAt: t0 + focusMins * 60 * 1000,
+          pauseAt: null,
+        }
+      }
 
       intervalRef.current = window.setInterval(() => {
-        if (pausedRef.current) return
-        setRemaining((r) =>
-          nextRemainingAfterSecond(
-            r,
-            sessionNum,
-            totalSessions,
-            intervalRef,
-            (n) => beginBlockRef.current(n),
-            finish,
-          ),
-        )
-      }, 1000)
+        timerTickRef.current()
+      }, 50)
+
+      setHiresTick((x) => x + 1)
 
       if (browserSpotifyPlayingRef.current) {
         spotifyDrovePauseRef.current = true
+        const a = timerAnchorRef.current
+        if (a && a.pauseAt == null) a.pauseAt = Date.now()
         pausedRef.current = true
         setPaused(true)
-        setS2VinylSpin(true)
+        setHiresTick((x) => x + 1)
       }
     },
-    [breakMins, clearTimer, finish, focusMins, totalSessions],
+    [breakMins, clearTimer, focusMins],
   )
 
   useEffect(() => {
@@ -528,9 +637,21 @@ export default function HitsDifferentApp() {
   const togglePause = useCallback(() => {
     spotifyDrovePauseRef.current = false
     const nextPaused = !pausedRef.current
-    pausedRef.current = nextPaused
-    setPaused(nextPaused)
-    setS2VinylSpin(!nextPaused)
+    const a = timerAnchorRef.current
+    if (nextPaused) {
+      if (a && a.pauseAt == null) a.pauseAt = Date.now()
+      pausedRef.current = true
+      setPaused(true)
+    } else {
+      if (a && a.pauseAt != null) {
+        const dt = Date.now() - a.pauseAt
+        a.endAt += dt
+        a.pauseAt = null
+      }
+      pausedRef.current = false
+      setPaused(false)
+    }
+    setHiresTick((x) => x + 1)
   }, [])
 
   useEffect(() => {
@@ -558,6 +679,8 @@ export default function HitsDifferentApp() {
 
   const restartSession = useCallback(() => {
     clearTimer()
+    timerAnchorRef.current = null
+    tickSessionNumRef.current = 0
     demoFocusAudioRef.current?.pause()
     demoBreakAudioRef.current?.pause()
     setPaused(false)
@@ -571,6 +694,7 @@ export default function HitsDifferentApp() {
     launchInProgressRef.current = false
     setDoneOpen(false)
     setCurSession(1)
+    setRemaining(0)
   }, [clearTimer])
 
   const exportHistory = useCallback(() => {
@@ -578,7 +702,7 @@ export default function HitsDifferentApp() {
       showToast('No sessions to export')
       return
     }
-    const rows = ['Task,Date,Sessions,Vibe,Focus Duration (min),Completed']
+    const rows = ['Task,Date,Rounds,Vibe,Focus length (min),Completed']
     sessionHistory.forEach((s) => {
       rows.push(
         `"${s.task}","${s.date}",${s.sessions},"${s.vibe}",${s.duration},${s.completed}`,
@@ -630,8 +754,8 @@ export default function HitsDifferentApp() {
     const focusEl = demoFocusAudioRef.current
     const breakEl = demoBreakAudioRef.current
     if (!focusEl || !breakEl) return
-    pauseDemoAudio(focusEl)
-    pauseDemoAudio(breakEl)
+    pauseDemoAudio(focusEl, true)
+    pauseDemoAudio(breakEl, true)
   }, [selectedVibe])
 
   useEffect(() => {
@@ -639,20 +763,26 @@ export default function HitsDifferentApp() {
     const breakEl = demoBreakAudioRef.current
     if (!focusEl || !breakEl) return
 
-    if (view !== 'session' || paused || doneOpen || isSignedIn) {
-      pauseDemoAudio(focusEl)
-      pauseDemoAudio(breakEl)
+    if (view !== 'session' || doneOpen || isSignedIn) {
+      pauseDemoAudio(focusEl, true)
+      pauseDemoAudio(breakEl, true)
+      return
+    }
+
+    if (paused) {
+      focusEl.pause()
+      breakEl.pause()
       return
     }
 
     const wantBreak = timerMode === 'BREAK'
 
     if (wantBreak) {
-      pauseDemoAudio(focusEl)
+      pauseDemoAudio(focusEl, true)
       breakEl.volume = DEMO_LOOP_VOL
       void breakEl.play().catch(() => {})
     } else {
-      pauseDemoAudio(breakEl)
+      pauseDemoAudio(breakEl, true)
       focusEl.volume = DEMO_LOOP_VOL
       void focusEl.play().catch(() => {})
     }
@@ -666,7 +796,16 @@ export default function HitsDifferentApp() {
 
   return (
     <TickerWheelProvider>
-    <div className="box-border min-h-svh w-full max-w-[100vw] overflow-x-hidden bg-hd-bg font-sans text-white antialiased select-none lg:h-svh lg:overflow-hidden">
+    <div className="relative min-h-svh w-full max-w-[100vw]">
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden>
+        <div
+          className="absolute inset-0 bg-cover bg-center blur-[1.5px]"
+          style={{ backgroundImage: `url('${HD_CAFE_BG_URL}')` }}
+        />
+        <div className="absolute inset-0 bg-hd-bg/15" />
+        <div className="absolute inset-0 bg-black/48" />
+      </div>
+      <div className="relative z-10 box-border min-h-svh w-full max-w-[100vw] overflow-x-hidden font-sans text-white antialiased select-none lg:h-svh lg:overflow-hidden">
       <audio
         ref={demoFocusAudioRef}
         className="sr-only"
@@ -747,7 +886,7 @@ export default function HitsDifferentApp() {
       <div
         id="historyPanel"
         className={cn(
-          'fixed bottom-0 right-0 top-0 z-[150] flex w-full max-w-[min(100vw,340px)] flex-col border-l border-white/10 bg-hd-panel font-sans transition-transform duration-[400ms] ease-[cubic-bezier(.4,0,.2,1)]',
+          'fixed bottom-0 right-0 top-0 z-[220] flex w-full max-w-[min(100vw,340px)] flex-col border-l border-white/10 bg-hd-panel font-sans transition-transform duration-[400ms] ease-[cubic-bezier(.4,0,.2,1)]',
           historyOpen ? 'translate-x-0' : 'translate-x-full',
         )}
       >
@@ -785,7 +924,7 @@ export default function HitsDifferentApp() {
                   {s.task}
                 </div>
                 <div className="font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/40">
-                  {s.date} · {s.sessions} sessions · {s.vibe} · {s.duration}m focus
+                  {s.date} · {s.sessions} rounds · {s.vibe} · {s.duration}m focus
                 </div>
               </div>
             ))
@@ -804,79 +943,50 @@ export default function HitsDifferentApp() {
       {/* Setup */}
       <div id="s1" className={hdMainGridShellClass('setup', view)}>
         <div
-          className="relative z-[5] flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-hd-gold px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[4.5rem] transition-colors duration-500 sm:px-6 lg:min-h-0 lg:flex-none lg:pb-5 lg:pt-5"
+          className="relative z-[5] flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-transparent px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[4.5rem] transition-colors duration-500 sm:px-6 lg:min-h-0 lg:flex-none lg:pb-5 lg:pt-5"
           id="s1Left"
         >
           <div className="flex h-full min-h-0 flex-col overflow-y-auto overflow-x-hidden pb-10 [scrollbar-width:none] [&::-webkit-scrollbar]:w-0">
             <div className="flex min-h-full w-full flex-1 flex-col items-center justify-center px-1 py-2">
               <div
                 className={cn(
-                  'flex w-full max-w-[280px] flex-col items-start text-start',
+                  'flex w-full max-w-[min(100%,420px)] flex-col items-start text-start',
                   HD_COLUMN_STACK_GAP,
                 )}
               >
-            <div className="relative w-full max-w-[230px] shrink-0 self-start">
-              <div
-                className="relative z-[3] flex aspect-square w-full max-w-[200px] shrink-0 items-center justify-center overflow-hidden rounded bg-[#222] text-[clamp(44px,12vw,58px)] transition-transform duration-300"
-                id="s1Cover"
-              >
-                <span className="relative z-[2] text-[clamp(44px,12vw,58px)]" id="s1Emoji">
-                  🎵
-                </span>
-              </div>
-              <div
-                className="hd-vinyl"
-                id="s1Vinyl"
-              />
-            </div>
-
-            <div className={cn('flex w-full shrink-0 flex-col', HD_COLUMN_STACK_GAP)}>
-              <div className="flex w-full flex-col gap-2">
-                <div className="flex w-full justify-start gap-2">
-                  <input
-                    className="min-w-0 flex-1 rounded border-[1.5px] border-white/25 bg-black/35 px-3 py-2 text-left font-[family-name:var(--font-space-mono)] text-[13px] text-white outline-none transition-colors placeholder:text-white/30 focus:border-white/45 focus:bg-black/40 focus:outline-none"
-                    id="taskInput"
-                    type="text"
-                    aria-label="Set your task — press Enter to start"
-                    placeholder="Set your task to begin"
-                    maxLength={42}
-                    value={taskInput}
-                    onChange={(e) => setTaskInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key !== 'Enter') return
-                      e.preventDefault()
-                      launch()
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className={cn(
-                      'inline-flex size-[38px] shrink-0 items-center justify-center rounded border-[1.5px] p-0 font-[family-name:var(--font-space-mono)] text-[15px] leading-none transition-colors',
-                      taskInput.trim()
-                        ? 'border-transparent bg-white text-hd-bg hover:bg-zinc-200'
-                        : 'cursor-not-allowed border-white/20 bg-white/15 text-white/40 hover:bg-white/15',
-                    )}
-                    disabled={!taskInput.trim()}
-                    title="Start session"
-                    aria-label="Start session"
-                    onClick={() => launch()}
-                  >
-                    <span
-                      className="inline-flex size-full items-center justify-center pl-px"
-                      aria-hidden
-                    >
-                      <Play className="size-[15px]" strokeWidth={2.5} aria-hidden />
-                    </span>
-                  </button>
+                <div className="relative w-full shrink-0 self-start">
+                  <div className="relative z-[5] w-full text-start">
+                    <div className="font-[family-name:var(--font-bebas)] text-[clamp(88px,20vw,220px)] leading-none tracking-[6px] text-white/10 tabular-nums">
+                      {focusLengthPreviewClock}
+                    </div>
+                  </div>
                 </div>
-                <div className="relative flex justify-start" ref={timerSettingsRef}>
+
+                <div className={cn('flex w-full shrink-0 flex-col', HD_COLUMN_STACK_GAP)}>
+              <div className="flex w-full items-center justify-start gap-2">
+                <input
+                  className="min-w-0 flex-1 rounded border-[1.5px] border-white/25 bg-black/35 px-3 py-2 text-left font-[family-name:var(--font-space-mono)] text-[13px] text-white outline-none transition-colors placeholder:text-white/30 focus:border-white/45 focus:bg-black/40 focus:outline-none"
+                  id="taskInput"
+                  type="text"
+                  aria-label="Enter your task — press Enter to start"
+                  placeholder="Enter your task to begin"
+                  maxLength={42}
+                  value={taskInput}
+                  onChange={(e) => setTaskInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter') return
+                    e.preventDefault()
+                    launch()
+                  }}
+                />
+                <div className="relative shrink-0" ref={timerSettingsRef}>
                   <button
                     type="button"
                     className={cn(
-                      'flex h-[34px] w-[34px] items-center justify-center rounded border-[1.5px] border-white/25 bg-black/25 font-[family-name:var(--font-space-mono)] text-[14px] text-white/80 transition-colors hover:border-white/45 hover:bg-black/35 hover:text-white',
+                      'flex h-[38px] w-[38px] items-center justify-center rounded border-[1.5px] border-white/25 bg-black/25 font-[family-name:var(--font-space-mono)] text-[14px] text-white/80 transition-colors hover:border-white/45 hover:bg-black/35 hover:text-white',
                       timerSettingsOpen && 'border-white/50 bg-black/40 text-white',
                     )}
-                    title="Focus, break & rounds"
+                    title="Focus length, break & rounds"
                     aria-expanded={timerSettingsOpen}
                     aria-haspopup="dialog"
                     aria-controls="timerSettingsPanel"
@@ -886,7 +996,7 @@ export default function HitsDifferentApp() {
                   </button>
                   {timerSettingsOpen ? (
                     <div
-                      className="absolute left-0 top-[calc(100%+8px)] z-[60] w-[min(calc(100vw-2.5rem),220px)] rounded border border-white/15 bg-[#141414] px-3 py-2.5 text-left shadow-[0_12px_40px_rgba(0,0,0,0.55)]"
+                      className="absolute right-0 top-[calc(100%+8px)] z-[60] w-[min(calc(100vw-2.5rem),220px)] rounded border border-white/15 bg-[#141414] px-3 py-2.5 text-left shadow-[0_12px_40px_rgba(0,0,0,0.55)]"
                       id="timerSettingsPanel"
                       role="dialog"
                       aria-modal="true"
@@ -897,7 +1007,8 @@ export default function HitsDifferentApp() {
                         Timer settings
                       </h2>
                       <p id="timerSettingsDesc" className="sr-only">
-                        Set focus length, break length, and number of pomodoro rounds before you start.
+                        Set focus length, break length, and how many focus-and-break rounds to
+                        run.
                       </p>
                       <TimerSelectRow
                         id="focusSelect"
@@ -941,12 +1052,12 @@ export default function HitsDifferentApp() {
                   ) : null}
                 </div>
               </div>
-            </div>
-              </div>
+                </div>
             </div>
           </div>
-          <p className={cn(HD_LEFT_COLUMN_COPYRIGHT, 'text-black/45')} aria-hidden>
-            © {new Date().getFullYear()} Hits Different
+          </div>
+          <p className={cn(HD_LEFT_COLUMN_COPYRIGHT, 'text-white/40')} aria-hidden>
+            © 2026 Julian Cho
           </p>
         </div>
 
@@ -957,51 +1068,84 @@ export default function HitsDifferentApp() {
           onVibePick={handleVibePick}
           wheelForwardActive={view === 'setup'}
         />
-
-        <div className={HD_TIMER_STAGE_COLUMN}>
-          <TimerStageRings />
-          <div className="relative z-[5] w-full text-start">
-            <div className="font-[family-name:var(--font-bebas)] text-[clamp(88px,16vw,168px)] leading-none tracking-[6px] text-white/10">
-              {String(focusMins).padStart(2, '0')}:00
-            </div>
-          </div>
-          <DotsRow total={totalSessions} current={1} id="previewDots" />
-          <div className={HD_STAGE_FOOTER_STACK} id="previewLabel">
-            <div className={HD_STAGE_FOOTER_LINE}>
-              {totalSessions} POMODORO SESSIONS
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Session */}
       <div id="s2" className={hdMainGridShellClass('session', view)}>
         <div
           className={cn(
-            'relative z-[5] flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[4.5rem] transition-colors duration-500 sm:px-6 lg:min-h-0 lg:flex-none lg:pb-5 lg:pt-5',
-            isBreakTint && 'bg-hd-break',
-            isDoneTint && 'bg-hd-done',
-            !isBreakTint && !isDoneTint && 'bg-hd-gold',
+            'relative z-[5] flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden bg-transparent px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[4.5rem] transition-colors duration-500 sm:px-6 lg:min-h-0 lg:flex-none lg:pb-5 lg:pt-5',
+            isBreakTint && 'bg-hd-break/18',
+            isDoneTint && 'bg-hd-done/18',
           )}
           id="s2Left"
         >
           <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center overflow-y-auto overflow-x-hidden px-0 py-2 pb-10">
             <div
               className={cn(
-                'flex w-full max-w-[280px] flex-col items-start text-start',
+                'flex w-full max-w-[min(100%,420px)] flex-col items-start text-start',
                 HD_COLUMN_STACK_GAP,
               )}
             >
-              <div className="relative w-full max-w-[230px] shrink-0 self-start">
-                <div
-                  className="relative z-[3] flex aspect-square w-full max-w-[200px] shrink-0 items-center justify-center overflow-hidden rounded bg-[#222] text-[clamp(44px,12vw,58px)] transition-transform duration-300"
-                  id="s2Cover"
-                >
-                  <span className="relative z-[2] text-[clamp(44px,12vw,58px)]" id="s2Emoji">
-                    🎵
-                  </span>
+              <div className="relative w-full shrink-0 self-start">
+                <div className="relative z-[5] w-full text-start">
+                  <div
+                    className="flex flex-row flex-wrap items-baseline font-[family-name:var(--font-bebas)] leading-none tracking-[6px] text-white tabular-nums"
+                    id="timerNum"
+                  >
+                    <span
+                      className={cn(
+                        'text-[clamp(88px,20vw,220px)]',
+                        paused &&
+                          'text-white [text-shadow:0_0_1px_rgba(0,0,0,0.9),0_2px_28px_rgba(255,255,255,0.35)]',
+                      )}
+                    >
+                      {view === 'session' ? hiresLabel : focusLengthPreviewClock}
+                    </span>
+                  </div>
                 </div>
-                <div className={cn('hd-vinyl', s2VinylSpin && 'hd-vinyl-spin')} id="s2Vinyl" />
+                <div className="relative z-[5] mt-6 flex flex-wrap justify-start gap-2">
+                  <button
+                    type="button"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded border border-white/20 bg-white/10 px-4 py-1.5 font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide text-white transition-colors hover:bg-white/15"
+                    onClick={restartSession}
+                  >
+                    <RotateCcw className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+                    RESET
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(
+                      'inline-flex cursor-pointer items-center gap-1.5 rounded border px-4 py-1.5 font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide transition-colors',
+                      paused
+                        ? 'border-white/45 bg-white/22 text-white hover:bg-white/30'
+                        : 'border-transparent bg-white text-hd-bg hover:bg-zinc-200',
+                    )}
+                    id="pauseBtn"
+                    onClick={togglePause}
+                  >
+                    {paused ? (
+                      <>
+                        <Play className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+                        RESUME
+                      </>
+                    ) : (
+                      <>
+                        <Pause className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+                        PAUSE
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded border border-white/20 bg-white/10 px-4 py-1.5 font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide text-white transition-colors hover:bg-white/15"
+                    title="Floating timer window (Chrome / Edge)"
+                    onClick={() => void openTimerPictureInPicture()}
+                  >
+                    <PictureInPicture2 className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+                    PiP
+                  </button>
+                </div>
               </div>
 
               <div className={cn('flex w-full shrink-0 flex-col', HD_COLUMN_STACK_GAP)}>
@@ -1056,11 +1200,11 @@ export default function HitsDifferentApp() {
           <p
             className={cn(
               HD_LEFT_COLUMN_COPYRIGHT,
-              isBreakTint || isDoneTint ? 'text-white/35' : 'text-black/45',
+              isBreakTint || isDoneTint ? 'text-white/35' : 'text-white/40',
             )}
             aria-hidden
           >
-            © {new Date().getFullYear()} Hits Different
+            © 2026 Julian Cho
           </p>
 
           <div
@@ -1082,7 +1226,7 @@ export default function HitsDifferentApp() {
               className="mt-1.5 font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide text-white/45"
               id="doneSub"
             >
-              {totalSessions} SESSIONS · {focusMins}MIN FOCUS · {selectedVibe}
+              {focusMins} min · {selectedVibe}
             </div>
             <div className="mt-5 flex w-full max-w-[min(100%,20rem)] flex-col gap-2.5 sm:max-w-none sm:flex-row sm:justify-center">
               <button
@@ -1112,71 +1256,9 @@ export default function HitsDifferentApp() {
           onVibePick={handleVibePick}
           wheelForwardActive={view === 'session'}
         />
-
-        <div className={HD_TIMER_STAGE_COLUMN} id="s2Right">
-          <TimerStageRings />
-          <div className="relative z-[5] w-full text-start">
-            <div className="font-[family-name:var(--font-bebas)] text-[clamp(88px,16vw,168px)] leading-none tracking-[6px] text-white" id="timerNum">
-              {view === 'session' ? fmt(remaining) : `${String(focusMins).padStart(2, '0')}:00`}
-            </div>
-            <div
-              className="mt-1.5 font-[family-name:var(--font-space-mono)] text-[10px] uppercase tracking-[3px] text-white/30"
-              id="timerMode"
-            >
-              {view === 'session' ? timerMode : 'FOCUS'}
-            </div>
-          </div>
-          <DotsRow total={totalSessions} current={curSession} id="liveDots" />
-          <div className="relative z-[5] mt-5 flex flex-wrap justify-start gap-2">
-            <button
-              type="button"
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded border border-white/20 bg-white/10 px-4 py-1.5 font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide text-white transition-colors hover:bg-white/15"
-              onClick={restartSession}
-            >
-              <RotateCcw className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
-              RESET
-            </button>
-            <button
-              type="button"
-              className={cn(
-                'inline-flex cursor-pointer items-center gap-1.5 rounded border px-4 py-1.5 font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide transition-colors',
-                paused
-                  ? 'border-white/20 bg-white/10 text-white hover:bg-white/15'
-                  : 'border-transparent bg-white text-hd-bg hover:bg-zinc-200',
-              )}
-              id="pauseBtn"
-              onClick={togglePause}
-            >
-              {paused ? (
-                <>
-                  <Play className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
-                  RESUME
-                </>
-              ) : (
-                <>
-                  <Pause className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
-                  PAUSE
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded border border-white/20 bg-white/10 px-4 py-1.5 font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide text-white transition-colors hover:bg-white/15"
-              title="Floating timer window (Chrome / Edge)"
-              onClick={() => void openTimerPictureInPicture()}
-            >
-              <PictureInPicture2 className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
-              PiP
-            </button>
-          </div>
-          <div className={HD_STAGE_FOOTER_STACK} id="sessLabel">
-            <div className={HD_STAGE_FOOTER_LINE}>
-              SESSION {curSession} OF {totalSessions}
-            </div>
-          </div>
-        </div>
       </div>
 
+    </div>
     </div>
     </TickerWheelProvider>
   )

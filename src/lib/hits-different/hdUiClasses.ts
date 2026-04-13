@@ -4,11 +4,7 @@ import { cn } from '@/lib/cn'
 export const HD_TOP_BAR_BTN =
   'inline-flex min-h-0 cursor-pointer items-center border-0 bg-transparent p-0 align-middle font-[family-name:var(--font-space-mono)] text-[12px] font-normal leading-none tracking-wide text-white whitespace-nowrap antialiased'
 
-/** Right column: preview + live timer stage (shared shell). */
-export const HD_TIMER_STAGE_COLUMN =
-  'relative flex min-h-[38svh] min-w-0 flex-1 flex-col items-start justify-center overflow-hidden bg-hd-bg px-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 lg:min-h-0 lg:flex-none lg:pb-0'
-
-/** Vertical spacing between album, labels, and inputs (setup + session left columns). */
+/** Vertical spacing between stage, labels, and inputs (setup + session left columns). */
 export const HD_COLUMN_STACK_GAP = 'gap-4'
 
 /** Bottom stack in timer column (pomodoro / session caption only). */
@@ -24,11 +20,14 @@ export const HD_LEFT_COLUMN_COPYRIGHT =
   'pointer-events-none absolute bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-4 z-[3] sm:left-6 whitespace-nowrap font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide'
 
 /**
- * Desktop main grid: three tracks with the center (ticker) fixed at 1/10 of the row.
- * The remaining 9/10 splits by the golden ratio φ so left:right ≈ φ:1 (55.6% : 34.4% of full width).
- * Fr weights sum to 10 so the ticker stays 10% like the previous 5:1:4 layout, but outer bands are golden.
+ * Desktop “golden radio” grid: two tracks only — major : minor = φ : 1 (≈ 61.8% : 38.2%).
+ * Main task/timer lives in the wide band; the infinite vibe list sits in the narrow band (tuning strip).
  */
-export const HD_MAIN_GRID_COLS_CLASS = 'lg:grid-cols-[5.562fr_1fr_3.438fr]'
+export const HD_MAIN_GRID_COLS_CLASS = 'lg:grid-cols-[5.562fr_3.438fr]'
+
+/** Minor (ticker) column: dial strip layout (no chrome — spacing only). */
+export const HD_TICKER_COLUMN_SHELL =
+  'relative flex h-24 min-h-0 min-w-0 shrink-0 flex-col overflow-hidden px-2 py-2 sm:px-3 lg:h-full lg:py-4'
 
 export function hdMainGridShellClass(
   mode: 'setup' | 'session',

@@ -13,6 +13,7 @@ import {
 } from 'react'
 import { cn } from '@/lib/cn'
 import { VIBES, type Vibe } from '@/lib/hits-different/data'
+import { HD_TICKER_COLUMN_SHELL } from '@/lib/hits-different/hdUiClasses'
 
 type TickerWheelRegistry = {
   register: (fn: (deltaY: number) => void) => void
@@ -135,10 +136,10 @@ function VibeTickerButton({
       tabIndex={isGhost ? -1 : undefined}
       aria-hidden={isGhost ? true : undefined}
       className={cn(
-        'w-full cursor-pointer rounded border border-transparent px-1.5 py-1 text-start transition-colors hover:border-transparent hover:text-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40',
+        'w-full cursor-pointer rounded bg-transparent px-1.5 py-1 text-start transition-colors hover:text-white/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 focus-visible:ring-offset-0',
         visuallySelected
-          ? 'bg-white/10 font-bold text-white'
-          : 'font-normal',
+          ? 'font-semibold text-white underline decoration-white/45 underline-offset-[3px]'
+          : 'font-normal text-white/35',
       )}
       onClick={() => onPickVibe(vibe, duplicateIndex)}
     >
@@ -387,7 +388,7 @@ function WheelInfiniteVibeList({
 }
 
 const SCROLLBAR_ROW =
-  'scroll-smooth overflow-y-auto overflow-x-hidden [scrollbar-color:rgba(255,255,255,0.12)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/15'
+  'scroll-smooth overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:w-0 [&::-webkit-scrollbar]:bg-transparent'
 
 export function TickerColumn({
   tickerId,
@@ -421,7 +422,7 @@ export function TickerColumn({
   )
 
   return (
-    <div className="relative flex h-24 min-h-0 shrink-0 flex-col overflow-hidden border-y border-white/[0.06] bg-hd-bg lg:h-full lg:min-h-0 lg:min-w-0 lg:w-full lg:border-x lg:border-y-0">
+    <div className={cn(HD_TICKER_COLUMN_SHELL, 'lg:min-h-0 lg:w-full')}>
       {reduceMotion ? (
         <div className={cn('flex min-h-0 flex-1 flex-col', SCROLLBAR_ROW)}>
           <StaticVibeList
