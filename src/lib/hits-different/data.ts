@@ -5,6 +5,7 @@ export const VIBES = [
   'EDM',
   'CLASSICAL',
   'ACOUSTIC',
+  'SPIRITUAL',
 ] as const
 
 export type Vibe = (typeof VIBES)[number]
@@ -16,6 +17,7 @@ export const VIBE_TRACKS: Record<string, string> = {
   EDM: 'EDM FOCUS MIX',
   CLASSICAL: 'CHOPIN · BALLADE NO. 2',
   ACOUSTIC: 'ACOUSTIC CHILL MIX',
+  SPIRITUAL: '432 HZ · ETHEREAL BRIDGE',
 }
 
 /** Curated public Spotify playlists (editorial / widely used). */
@@ -37,6 +39,9 @@ export const VIBE_SAMPLE_PLAYLISTS: Record<Vibe, { spotifyUrl: string }> = {
   },
   ACOUSTIC: {
     spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DX6ziVCJnEm59',
+  },
+  SPIRITUAL: {
+    spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DX6GwdWRQMQpq',
   },
 }
 
@@ -65,6 +70,8 @@ export const EDM_DEMO_FOCUS_MP3 = '/audio/edm-brazilian-phonk-505181.mp3' as con
 export const JAZZ_DEMO_FOCUS_MP3 = '/audio/jazz-moment-14023.mp3' as const
 export const CLASSICAL_DEMO_FOCUS_MP3 = '/audio/chopin-ballade-2-op38.mp3' as const
 export const ACOUSTIC_DEMO_FOCUS_MP3 = '/audio/acoustic-summer-walk-152722.mp3' as const
+export const SPIRITUAL_DEMO_FOCUS_MP3 =
+  '/audio/gnosticbliss-432-hz-ethereal-bridge-331605.mp3' as const
 
 export function sessionDemoFocusSrc(vibe: Vibe): string {
   if (vibe === 'LO-FI') return LOFI_DEMO_FOCUS_MP3
@@ -73,6 +80,7 @@ export function sessionDemoFocusSrc(vibe: Vibe): string {
   if (vibe === 'EDM') return EDM_DEMO_FOCUS_MP3
   if (vibe === 'CLASSICAL') return CLASSICAL_DEMO_FOCUS_MP3
   if (vibe === 'ACOUSTIC') return ACOUSTIC_DEMO_FOCUS_MP3
+  if (vibe === 'SPIRITUAL') return SPIRITUAL_DEMO_FOCUS_MP3
   return LOFI_DEMO_FOCUS_MP3
 }
 
