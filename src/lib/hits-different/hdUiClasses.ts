@@ -7,14 +7,6 @@ export const HD_TOP_BAR_BTN =
 /** Vertical spacing between stage, labels, and inputs (setup + session left columns). */
 export const HD_COLUMN_STACK_GAP = 'gap-4'
 
-/** Bottom stack in timer column (pomodoro / session caption only). */
-export const HD_STAGE_FOOTER_STACK =
-  'pointer-events-none absolute bottom-[22px] left-4 z-[5] flex flex-col items-start gap-1 sm:left-6'
-
-/** Pomodoro session / preview caption line. */
-export const HD_STAGE_FOOTER_LINE =
-  'whitespace-nowrap font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/20'
-
 /** Gold left column: © pinned bottom-left (parent must be `relative`). */
 export const HD_LEFT_COLUMN_COPYRIGHT =
   'pointer-events-none absolute bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-4 z-[3] sm:left-6 whitespace-nowrap font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide'

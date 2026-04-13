@@ -52,7 +52,8 @@ import {
   hdMainGridShellClass,
 } from '@/lib/hits-different/hdUiClasses'
 
-const HD_CAFE_BG_URL = '/images/cafe-des-etudes-bg.png'
+/** Web background loop (~1080p H.264, no audio, `faststart`). Re-encode: `ffmpeg -i IN.mp4 -vf scale=1920:-2 -c:v libx264 -crf 26 -preset medium -an -movflags +faststart -pix_fmt yuv420p OUT.mp4` */
+const HD_BG_VIDEO_URL = '/video/lofi-cafe-bg-web.mp4'
 
 /** Wall-clock ms → `MM:SS`. */
 function fmtHires(totalMs: number) {
@@ -94,6 +95,41 @@ function readFaviconSec(
   if (!anchor || view !== 'session' || doneOpen) return 0
   const now = anchor.pauseAt ?? Date.now()
   return Math.floor(getPhaseLeftMs(anchor, now) / 1000)
+}
+
+/** Document Picture-in-Picture shell without `innerHTML` (text-only nodes). */
+function mountPipTimerShell(doc: Document, pipClock: string, isPaused: boolean): void {
+  const body = doc.body
+  body.replaceChildren()
+  body.style.margin = '0'
+  body.style.background = '#0c0c0c'
+  body.style.color = '#e5e5e5'
+
+  const root = doc.createElement('div')
+  root.style.cssText =
+    'display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;box-sizing:border-box;padding:12px;font-family:ui-monospace,monospace'
+
+  const timeWrap = doc.createElement('div')
+  timeWrap.id = 'pip-time'
+  timeWrap.style.cssText =
+    'display:flex;align-items:center;justify-content:center;line-height:1'
+
+  const main = doc.createElement('span')
+  main.id = 'pip-time-main'
+  main.style.cssText = 'font-size:32px;font-weight:600;letter-spacing:0.04em'
+  main.textContent = pipClock
+
+  const btn = doc.createElement('button')
+  btn.type = 'button'
+  btn.id = 'pip-toggle'
+  btn.style.cssText =
+    'margin-top:22px;display:inline-flex;align-items:center;justify-content:center;padding:8px 22px;border-radius:4px;border:1px solid rgba(255,255,255,0.35);background:#fff;color:#0c0c0c;font-family:inherit;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer'
+  btn.textContent = isPaused ? 'Resume' : 'Pause'
+
+  timeWrap.appendChild(main)
+  root.appendChild(timeWrap)
+  root.appendChild(btn)
+  body.appendChild(root)
 }
 
 const SAMPLE_MIX_LINK_CLS =
@@ -282,8 +318,6 @@ export default function HitsDifferentApp() {
   const [totalSessions, setTotalSessions] = useState(6)
 
   const [curSession, setCurSession] = useState(1)
-  /** Integer seconds for internal transitions (display / tab title use `hiresLabel`). */
-  const [, setRemaining] = useState(0)
   const [timerMode, setTimerMode] = useState('FOCUS')
   const [paused, setPaused] = useState(false)
   const pausedRef = useRef(false)
@@ -322,7 +356,6 @@ export default function HitsDifferentApp() {
 
   /** Option B highlight: snap to first clone when switching setup ↔ session. */
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync ticker wheel to view change
     setVibeHighlight({ tickerId: 'ticker1', duplicateIndex: 0 })
   }, [view])
 
@@ -337,11 +370,14 @@ export default function HitsDifferentApp() {
   const [timerSettingsOpen, setTimerSettingsOpen] = useState(false)
   const demoFocusAudioRef = useRef<HTMLAudioElement>(null)
   const demoBreakAudioRef = useRef<HTMLAudioElement>(null)
+  const bgVideoRef = useRef<HTMLVideoElement>(null)
   const lapApproachChimedForBlockRef = useRef<number | null>(null)
 
   const { notice: spotifyPlaybackNotice, accountVerified: spotifyAccountVerified } =
     useSpotifyPlaybackNotice(status)
 
+  /* Timer anchor lives in a ref; `hiresTick` bumps each tick to re-derive label/favicon. */
+  /* eslint-disable react-hooks/refs, react-hooks/exhaustive-deps */
   const hiresLabel = useMemo(
     () => readHiresClock(timerAnchorRef.current, view, doneOpen),
     [hiresTick, view, doneOpen],
@@ -350,6 +386,7 @@ export default function HitsDifferentApp() {
     () => readFaviconSec(timerAnchorRef.current, view, doneOpen),
     [hiresTick, view, doneOpen],
   )
+  /* eslint-enable react-hooks/refs, react-hooks/exhaustive-deps */
   /** Setup / hidden session column: show chosen focus length (default 25 → 25:00). */
   const focusLengthPreviewClock = useMemo(
     () => fmtHires(focusMins * 60 * 1000),
@@ -370,6 +407,36 @@ export default function HitsDifferentApp() {
     viewRef.current = view
     doneOpenRef.current = doneOpen
   }, [view, doneOpen])
+
+  /** Muted background video: programmatic `play()` helps autoplay + loop across Chrome / Safari / tab restore. */
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const v = bgVideoRef.current
+    if (!v) return
+    v.muted = true
+    v.loop = true
+    const tryPlay = () => {
+      void v.play().catch(() => {})
+    }
+    tryPlay()
+    v.addEventListener('loadeddata', tryPlay)
+    v.addEventListener('canplay', tryPlay)
+    const onVis = () => {
+      if (document.visibilityState === 'visible') tryPlay()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) tryPlay()
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => {
+      v.removeEventListener('loadeddata', tryPlay)
+      v.removeEventListener('canplay', tryPlay)
+      document.removeEventListener('visibilitychange', onVis)
+      window.removeEventListener('pageshow', onPageShow)
+    }
+  }, [])
 
   const handleBrowserSpotifyPlaying = useCallback((playing: boolean) => {
     browserSpotifyPlayingRef.current = playing
@@ -400,7 +467,6 @@ export default function HitsDifferentApp() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(HISTORY_KEY)
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate session log from localStorage once
       if (raw) setSessionHistory(JSON.parse(raw) as HistoryEntry[])
     } catch {
       /* ignore */
@@ -440,16 +506,12 @@ export default function HitsDifferentApp() {
     )
     const pipMain = pip.document.getElementById('pip-time-main')
     if (pipMain) pipMain.textContent = clock
-    const timeElLegacy = pip.document.getElementById('pip-time')
-    if (timeElLegacy && !pipMain) {
-      timeElLegacy.textContent = clock
-    }
     if (toggleBtn) toggleBtn.textContent = paused ? 'Resume' : 'Pause'
-  }, [hiresTick, paused])
+  }, [paused])
 
   useEffect(() => {
     syncPipTimerWindow()
-  }, [syncPipTimerWindow])
+  }, [syncPipTimerWindow, hiresTick])
 
   const openTimerPictureInPicture = useCallback(async () => {
     const api = (
@@ -472,19 +534,8 @@ export default function HitsDifferentApp() {
       }
       const pip = await api.requestWindow({ width: 280, height: 188 })
       pipWindowRef.current = pip
-      pip.document.body.style.margin = '0'
-      pip.document.body.style.background = '#0c0c0c'
-      pip.document.body.style.color = '#e5e5e5'
       const pipClock = readHiresClock(timerAnchorRef.current, view, doneOpen)
-      pip.document.body.innerHTML = `
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;box-sizing:border-box;padding:12px;font-family:ui-monospace,monospace;">
-        <div id="pip-time" style="display:flex;align-items:center;justify-content:center;line-height:1;">
-          <span id="pip-time-main" style="font-size:32px;font-weight:600;letter-spacing:0.04em;">${pipClock}</span>
-        </div>
-        <button type="button" id="pip-toggle" style="margin-top:22px;display:inline-flex;align-items:center;justify-content:center;padding:8px 22px;border-radius:4px;border:1px solid rgba(255,255,255,0.35);background:#fff;color:#0c0c0c;font-family:inherit;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">
-          ${paused ? 'Resume' : 'Pause'}
-        </button>
-      </div>`
+      mountPipTimerShell(pip.document, pipClock, paused)
       const pipToggle = pip.document.getElementById('pip-toggle')
       if (pipToggle) {
         pipToggle.addEventListener('click', (ev) => {
@@ -554,7 +605,6 @@ export default function HitsDifferentApp() {
     const total = totalSessionsRef.current
     const leftMs = getPhaseLeftMs(a, now)
     const leftSec = Math.max(0, Math.floor(leftMs / 1000))
-    setRemaining(leftSec)
 
     if (a.kind === 'focus') {
       const capSec = focusMinsRef.current * 60
@@ -589,8 +639,6 @@ export default function HitsDifferentApp() {
       setPaused(false)
       const isBreak = sessionNum % 2 === 0
       if (!isBreak) lapApproachChimedForBlockRef.current = null
-      const sec = isBreak ? breakMins * 60 : focusMins * 60
-      setRemaining(sec)
       setTimerMode(isBreak ? 'BREAK' : 'FOCUS')
       setCurSession(sessionNum)
 
@@ -694,7 +742,6 @@ export default function HitsDifferentApp() {
     launchInProgressRef.current = false
     setDoneOpen(false)
     setCurSession(1)
-    setRemaining(0)
   }, [clearTimer])
 
   const exportHistory = useCallback(() => {
@@ -798,10 +845,18 @@ export default function HitsDifferentApp() {
     <TickerWheelProvider>
     <div className="relative min-h-svh w-full max-w-[100vw]">
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden>
-        <div
-          className="absolute inset-0 bg-cover bg-center blur-[1.5px]"
-          style={{ backgroundImage: `url('${HD_CAFE_BG_URL}')` }}
+        <video
+          ref={bgVideoRef}
+          className="absolute inset-0 h-full w-full object-cover blur-[1.5px] motion-reduce:hidden"
+          src={HD_BG_VIDEO_URL}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          disablePictureInPicture
         />
+        <div className="absolute inset-0 hidden bg-hd-bg motion-reduce:block" />
         <div className="absolute inset-0 bg-hd-bg/15" />
         <div className="absolute inset-0 bg-black/48" />
       </div>
@@ -1057,7 +1112,7 @@ export default function HitsDifferentApp() {
           </div>
           </div>
           <p className={cn(HD_LEFT_COLUMN_COPYRIGHT, 'text-white/40')} aria-hidden>
-            © 2026 Julian Cho
+            © 2026 Julian C
           </p>
         </div>
 
@@ -1204,7 +1259,7 @@ export default function HitsDifferentApp() {
             )}
             aria-hidden
           >
-            © 2026 Julian Cho
+            © 2026 Julian C
           </p>
 
           <div

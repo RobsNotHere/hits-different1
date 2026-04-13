@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
 import { requireSpotifyAccessToken } from '@/lib/spotify/getSpotifyAccessToken'
-
-type Body = {
-  deviceId?: string
-  contextUri?: string
-}
+import {
+  parseSpotifyPlayBody,
+  type SpotifyPlayBody,
+} from '@/lib/spotify/validateSpotifyPlayRequest'
 
 /**
  * Start playback on the Web Playback device (`spotify:playlist:…` or album URI).
@@ -15,20 +14,16 @@ export async function POST(req: Request) {
   if (!guard.ok) return guard.response
   const { token } = guard
 
-  let body: Body
+  let body: SpotifyPlayBody
   try {
-    body = (await req.json()) as Body
+    body = (await req.json()) as SpotifyPlayBody
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { deviceId, contextUri } = body
-  if (!deviceId || !contextUri) {
-    return NextResponse.json(
-      { error: 'deviceId and contextUri required' },
-      { status: 400 },
-    )
-  }
+  const parsed = parseSpotifyPlayBody(body)
+  if (!parsed.ok) return parsed.response
+  const { deviceId, contextUri } = parsed
 
   const url = new URL('https://api.spotify.com/v1/me/player/play')
   url.searchParams.set('device_id', deviceId)
