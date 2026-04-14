@@ -8,7 +8,7 @@ function formatClock(totalSeconds: number) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-const DEFAULT_TITLE = 'Hits Different — Pomodoro'
+const DEFAULT_TITLE = 'HITS DIFFERENT — Pomodoro'
 const DEFAULT_ICON = '/favicon.svg'
 
 /**
@@ -28,7 +28,7 @@ export function useSessionTimerDocumentMeta(
       document.title = DEFAULT_TITLE
       return
     }
-    document.title = `${titleClock} · Hits Different`
+    document.title = `${titleClock} · HITS DIFFERENT`
   }, [active, titleClock])
 
   useEffect(() => {

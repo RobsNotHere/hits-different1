@@ -14,11 +14,11 @@ export function HdWordmark({ onClick }: HdWordmarkProps) {
         HD_NAV_TEXT,
         'rounded-sm transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25',
       )}
-      aria-label="Hits Different — reset session"
+      aria-label="HITS DIFFERENT — reset session"
       onClick={onClick}
     >
-      <span className="block text-white">Hits</span>
-      <span className="block text-white">Different</span>
+      <span className="block text-white">HITS</span>
+      <span className="block text-white">DIFFERENT</span>
     </button>
   )
 }

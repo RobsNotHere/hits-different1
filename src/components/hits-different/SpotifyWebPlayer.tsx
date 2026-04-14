@@ -156,7 +156,7 @@ export function SpotifyWebPlayer({
         if (cancelled || !window.Spotify?.Player) return
 
         const player = new window.Spotify.Player({
-          name: 'Hits Different',
+          name: 'HITS DIFFERENT',
           getOAuthToken: (cb) => {
             void fetch('/api/spotify/token')
               .then((r) => {

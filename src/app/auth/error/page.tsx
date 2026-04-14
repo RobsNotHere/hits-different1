@@ -34,7 +34,7 @@ export default async function AuthErrorPage({ searchParams }: Props) {
         href="/"
         className="font-[family-name:var(--font-inter)] text-xs tracking-wide text-white/55 underline decoration-white/25 underline-offset-2 hover:text-white"
       >
-        Back to Hits Different
+        Back to HITS DIFFERENT
       </Link>
     </main>
   )
