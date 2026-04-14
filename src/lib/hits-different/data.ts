@@ -10,6 +10,13 @@ export const VIBES = [
 
 export type Vibe = (typeof VIBES)[number]
 
+/** Selected vibe first — horizontal infinite rail keeps the active track at the leading edge. */
+export function vibesRotatedFrom(selected: Vibe): Vibe[] {
+  const i = VIBES.indexOf(selected)
+  if (i < 0) return [...VIBES]
+  return [...VIBES.slice(i), ...VIBES.slice(0, i)]
+}
+
 export const VIBE_TRACKS: Record<string, string> = {
   'LO-FI': 'LO-FI · CALM STUDY',
   HYPE: 'HYPE SPRINT MIX',
@@ -45,11 +52,22 @@ export const VIBE_SAMPLE_PLAYLISTS: Record<Vibe, { spotifyUrl: string }> = {
   },
 }
 
-export const DUR_OPTS = [15, 20, 25, 30, 45, 60]
+/** Combined focus + break + cycle presets (single “mode” in the UI). */
+type TimerModePreset = {
+  id: string
+  label: string
+  focusMins: number
+  breakMins: number
+  cycles: number
+}
 
-export const BREAK_OPTS = [3, 5, 10, 15, 20]
-
-export const SESSION_OPTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+export const TIMER_MODE_PRESETS: readonly TimerModePreset[] = [
+  { id: 'classic', label: 'Classic', focusMins: 25, breakMins: 5, cycles: 6 },
+  { id: 'sprint', label: 'Sprint', focusMins: 15, breakMins: 3, cycles: 8 },
+  { id: 'deep', label: 'Deep work', focusMins: 45, breakMins: 10, cycles: 4 },
+  { id: 'marathon', label: 'Marathon', focusMins: 60, breakMins: 15, cycles: 3 },
+  { id: 'light', label: 'Light session', focusMins: 20, breakMins: 5, cycles: 6 },
+] as const
 
 export type HistoryEntry = {
   task: string
@@ -64,13 +82,13 @@ export type HistoryEntry = {
 export const HISTORY_KEY = 'hd_history'
 
 /** Local MP3s in `public/audio/` — unsigned session demo audio in HitsDifferentApp. */
-export const LOFI_DEMO_FOCUS_MP3 = '/audio/lofi-study-calm-112191.mp3' as const
-export const HYPE_DEMO_FOCUS_MP3 = '/audio/hype-drill-438398.mp3' as const
-export const EDM_DEMO_FOCUS_MP3 = '/audio/edm-brazilian-phonk-505181.mp3' as const
-export const JAZZ_DEMO_FOCUS_MP3 = '/audio/jazz-moment-14023.mp3' as const
-export const CLASSICAL_DEMO_FOCUS_MP3 = '/audio/chopin-ballade-2-op38.mp3' as const
-export const ACOUSTIC_DEMO_FOCUS_MP3 = '/audio/acoustic-summer-walk-152722.mp3' as const
-export const SPIRITUAL_DEMO_FOCUS_MP3 =
+const LOFI_DEMO_FOCUS_MP3 = '/audio/lofi-study-calm-112191.mp3' as const
+const HYPE_DEMO_FOCUS_MP3 = '/audio/hype-drill-438398.mp3' as const
+const EDM_DEMO_FOCUS_MP3 = '/audio/edm-brazilian-phonk-505181.mp3' as const
+const JAZZ_DEMO_FOCUS_MP3 = '/audio/jazz-moment-14023.mp3' as const
+const CLASSICAL_DEMO_FOCUS_MP3 = '/audio/chopin-ballade-2-op38.mp3' as const
+const ACOUSTIC_DEMO_FOCUS_MP3 = '/audio/acoustic-summer-walk-152722.mp3' as const
+const SPIRITUAL_DEMO_FOCUS_MP3 =
   '/audio/gnosticbliss-432-hz-ethereal-bridge-331605.mp3' as const
 
 export function sessionDemoFocusSrc(vibe: Vibe): string {

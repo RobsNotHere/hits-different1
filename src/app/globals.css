@@ -10,6 +10,15 @@
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Task field: no focus/autofill “white flash” — match transparent field fill. */
+#taskInput:-webkit-autofill,
+#taskInput:-webkit-autofill:hover,
+#taskInput:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px transparent inset;
+  -webkit-text-fill-color: #ffffff;
+  transition: background-color 99999s ease-out;
+}
+
 @layer base {
   html,
   body {
@@ -37,5 +46,41 @@
   }
   100% {
     height: 11px;
+  }
+}
+
+/** Soft white–amber glow behind setup task field (HitsDifferentApp). */
+@keyframes hd-input-flare {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+}
+
+.hd-input-flare {
+  animation: hd-input-flare 11s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hd-input-flare {
+    animation: none;
+    opacity: 0.44;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Full-bleed ambient video in `#hdAnimatedBg`; respect reduced motion (static base only). */
+#hdAnimatedBg {
+  isolation: isolate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #hdBgVideo {
+    display: none;
   }
 }

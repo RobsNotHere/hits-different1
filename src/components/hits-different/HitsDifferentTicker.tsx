@@ -72,12 +72,14 @@ export function TickerWheelProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const onWheel = (e: WheelEvent) => {
       if (!applierRef.current) return
+      /** Ctrl+scroll (and Cmd+scroll where applicable) = browser page zoom — must not `preventDefault`. */
+      if (e.ctrlKey || e.metaKey) return
       const node = e.target
       if (!(node instanceof Element)) return
 
       if (node.closest('input, textarea, select, option, [contenteditable="true"]')) return
       if (node.closest('#historyPanel')) return
-      if (node.closest('#timerSettingsPanel')) return
+      if (node.closest('#timerModePicker')) return
       if (node.closest('#doneOverlay')) return
 
       const scrollEl = nearestVerticalScrollAncestor(node)
@@ -159,7 +161,7 @@ function StaticVibeList({
 }) {
   return (
     <nav
-      className="z-10 flex w-full min-w-0 flex-col gap-2 py-1 text-start font-[family-name:var(--font-space-mono)] text-[10px] leading-snug text-white/35"
+      className="z-10 flex w-full min-w-0 flex-col gap-2 py-1 text-start font-[family-name:var(--font-inter)] text-[10px] leading-snug text-white/35"
       id={id}
       aria-label="Music vibe"
     >
@@ -324,7 +326,7 @@ function WheelInfiniteVibeList({
         ref={trackRef}
         id={id}
         aria-label="Music vibe"
-        className="z-10 flex w-full min-w-0 flex-col gap-2 py-1 text-start font-[family-name:var(--font-space-mono)] text-[10px] leading-snug text-white/35 will-change-transform"
+        className="z-10 flex w-full min-w-0 flex-col gap-2 py-1 text-start font-[family-name:var(--font-inter)] text-[10px] leading-snug text-white/35 will-change-transform"
         style={{ transform: 'translateY(0)' }}
       >
         <div ref={segmentRef} className="flex flex-col gap-2">

@@ -7,11 +7,3 @@ export function jsonUnauthorized() {
     { status: 401 },
   )
 }
-
-/** Use when the user is signed in but must not access another user’s resource (IDOR). */
-export function jsonForbidden() {
-  return NextResponse.json(
-    { error: 'Forbidden', code: 'FORBIDDEN' },
-    { status: 403 },
-  )
-}

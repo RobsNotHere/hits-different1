@@ -27,7 +27,7 @@ function loadSpotifySdk(): Promise<void> {
 }
 
 const BTN_CLS =
-  'font-[family-name:var(--font-space-mono)] text-[9px] tracking-wide text-white/55 underline decoration-white/25 underline-offset-2 transition-colors hover:text-white hover:decoration-white/50 disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline'
+  'block w-full min-w-0 py-1 text-start font-[family-name:var(--font-inter)] text-[9px] tracking-wide text-white/55 underline decoration-white/25 underline-offset-2 transition-colors hover:text-white hover:decoration-white/50 disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline'
 
 /** Debounce rapid vibe changes so only the last playlist is sent to Spotify. */
 const CONTEXT_RESYNC_MS = 80

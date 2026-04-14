@@ -1,10 +1,24 @@
-const MARK_CLS =
-  'm-0 min-w-0 shrink whitespace-nowrap text-left font-[family-name:var(--font-bebas)] text-[clamp(13px,5.2vw,26px)] uppercase leading-none tracking-[0.04em] text-white'
+import { cn } from '@/lib/cn'
+import { HD_NAV_TEXT } from '@/lib/hits-different/hdUiClasses'
 
-export function HdWordmark() {
+type HdWordmarkProps = {
+  onClick: () => void
+}
+
+export function HdWordmark({ onClick }: HdWordmarkProps) {
   return (
-    <p className={MARK_CLS} aria-label="Hits Different">
-      Hits Different
-    </p>
+    <button
+      type="button"
+      className={cn(
+        'm-0 min-w-0 shrink cursor-pointer border-0 bg-transparent p-0 text-left',
+        HD_NAV_TEXT,
+        'rounded-sm transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25',
+      )}
+      aria-label="Hits Different — reset session"
+      onClick={onClick}
+    >
+      <span className="block text-white">Hits</span>
+      <span className="block text-white">Different</span>
+    </button>
   )
 }

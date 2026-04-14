@@ -19,20 +19,20 @@ export default async function AuthErrorPage({ searchParams }: Props) {
 
   return (
     <main className="mx-auto flex min-h-svh max-w-md flex-col justify-center gap-6 px-6 text-white">
-      <h1 className="font-[family-name:var(--font-bebas)] text-4xl tracking-wide">
+      <h1 className="font-[family-name:var(--font-euclid-flex)] text-4xl tracking-[0.06em] text-white">
         Sign-in error
       </h1>
-      <p className="font-[family-name:var(--font-space-mono)] text-sm leading-relaxed text-white/70">
+      <p className="font-[family-name:var(--font-inter)] text-sm leading-relaxed text-white/70">
         {message}
       </p>
       {error ? (
-        <p className="font-[family-name:var(--font-space-mono)] text-[10px] tracking-wide text-white/35">
+        <p className="font-[family-name:var(--font-inter)] text-[10px] tracking-wide text-white/35">
           Code: {error}
         </p>
       ) : null}
       <Link
         href="/"
-        className="font-[family-name:var(--font-space-mono)] text-xs tracking-wide text-white/55 underline decoration-white/25 underline-offset-2 hover:text-white"
+        className="font-[family-name:var(--font-inter)] text-xs tracking-wide text-white/55 underline decoration-white/25 underline-offset-2 hover:text-white"
       >
         Back to Hits Different
       </Link>
