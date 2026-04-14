@@ -27,31 +27,6 @@ export const VIBE_TRACKS: Record<string, string> = {
   SPIRITUAL: '432 HZ · ETHEREAL BRIDGE',
 }
 
-/** Curated public Spotify playlists (editorial / widely used). */
-export const VIBE_SAMPLE_PLAYLISTS: Record<Vibe, { spotifyUrl: string }> = {
-  'LO-FI': {
-    spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DWWQRwui0ExPn',
-  },
-  HYPE: {
-    spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DX76Wlfdnj7AP',
-  },
-  JAZZ: {
-    spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DX0SM0LYsmbMT',
-  },
-  EDM: {
-    spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DX6J5NfMJS675',
-  },
-  CLASSICAL: {
-    spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DWWEJlAGA9gs0',
-  },
-  ACOUSTIC: {
-    spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DX6ziVCJnEm59',
-  },
-  SPIRITUAL: {
-    spotifyUrl: 'https://open.spotify.com/playlist/37i9dQZF1DX6GwdWRQMQpq',
-  },
-}
-
 /** Combined focus + break + cycle presets (single “mode” in the UI). */
 type TimerModePreset = {
   id: string

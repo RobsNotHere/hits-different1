@@ -2,10 +2,10 @@ import Link from 'next/link'
 
 const MESSAGES: Record<string, string> = {
   Configuration:
-    'Sign-in can’t complete because of a server or environment configuration problem (check AUTH_URL, AUTH_SECRET, and Spotify app settings).',
-  AccessDenied: 'Sign in was cancelled or Spotify did not grant access.',
+    'Sign-in can’t complete because of a server or environment configuration problem.',
+  AccessDenied: 'Sign in was cancelled or access was not granted.',
   Verification: 'This sign-in link is no longer valid. Try signing in again.',
-  Default: 'Something went wrong while signing in with Spotify.',
+  Default: 'Something went wrong while signing in.',
 }
 
 type Props = {

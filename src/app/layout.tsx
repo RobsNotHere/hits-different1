@@ -17,8 +17,7 @@ const euclidFlexUltraLight = localFont({
 
 export const metadata: Metadata = {
   title: 'POMO + VIBE',
-  description:
-    'Pomodoro sessions with vibe mixes and optional Spotify connection.',
+  description: 'Pomodoro sessions with vibe mixes.',
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
   },

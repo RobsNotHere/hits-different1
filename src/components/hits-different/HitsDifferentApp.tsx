@@ -5,10 +5,9 @@ import {
   ArrowRight,
   ChevronDown,
   Download,
+  ExternalLink,
   List,
   Loader2,
-  LogIn,
-  LogOut,
   Pause,
   PictureInPicture2,
   Play,
@@ -26,13 +25,9 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { useUser } from '@/context/UserContext'
 import { useSessionTimerDocumentMeta } from '@/hooks/useSessionTimerDocumentMeta'
-import { useSpotifyPlaybackNotice } from '@/hooks/useSpotifyPlaybackNotice'
-import { SpotifyWebPlayer } from '@/components/hits-different/SpotifyWebPlayer'
 import { HdWordmark } from '@/components/hits-different/HdWordmark'
 import {
   TickerColumn,
@@ -48,10 +43,8 @@ import {
   TIMER_MODE_PRESETS,
   type HistoryEntry,
   type Vibe,
-  VIBE_SAMPLE_PLAYLISTS,
   VIBE_TRACKS,
 } from '@/lib/hits-different/data'
-import { spotifyPlaylistContextUri } from '@/lib/hits-different/spotifyPlaylistUri'
 import {
   HD_COLUMN_STACK_GAP,
   HD_DISPLAY_TITLE,
@@ -166,16 +159,6 @@ function mountPipTimerShell(doc: Document, pipClock: string, isPaused: boolean):
   root.appendChild(timeWrap)
   root.appendChild(btn)
   body.appendChild(root)
-}
-
-/** In-browser Spotify playback row (no external playlist link). */
-function SampleMixLinks({ browserPlay }: { browserPlay?: ReactNode }) {
-  if (!browserPlay) return null
-  return (
-    <div className="flex w-full min-w-0 flex-wrap items-start justify-start gap-x-3 gap-y-1 border-t border-white/10 pt-4">
-      {browserPlay}
-    </div>
-  )
 }
 
 /** Matches inset controls in the bordered task input (timer mode trigger + session transport). */
@@ -483,8 +466,6 @@ function playDemoFocusIntro(
 }
 
 export default function HitsDifferentApp() {
-  const { user, isSignedIn, status, signInWithSpotify, signOutUser } = useUser()
-
   const [view, setView] = useState<'setup' | 'session'>('setup')
   const [selectedVibe, setSelectedVibe] = useState('LO-FI')
   const [vibeHighlight, setVibeHighlight] = useState<VibeHighlightSource>({
@@ -505,11 +486,6 @@ export default function HitsDifferentApp() {
   const [timerMode, setTimerMode] = useState('FOCUS')
   const [paused, setPaused] = useState(false)
   const pausedRef = useRef(false)
-  /** Timer was auto-paused because in-browser Spotify started playing; cleared on manual pause or session end. */
-  const spotifyDrovePauseRef = useRef(false)
-  const browserSpotifyPlayingRef = useRef(false)
-  /** Mirrors ref for background video + dim (ref alone does not re-render). */
-  const [browserSpotifyPlaying, setBrowserSpotifyPlaying] = useState(false)
   const bgVideoRef = useRef<HTMLVideoElement>(null)
   const intervalRef = useRef<number | null>(null)
   const timerAnchorRef = useRef<SessionAnchor | null>(null)
@@ -595,9 +571,6 @@ export default function HitsDifferentApp() {
     }
   }, [demoTrackVol, effectiveDemoVol])
 
-  const { notice: spotifyPlaybackNotice, accountVerified: spotifyAccountVerified } =
-    useSpotifyPlaybackNotice(status)
-
   /* Timer anchor lives in a ref; `hiresTick` bumps each tick to re-derive label/favicon. */
   /* eslint-disable react-hooks/refs, react-hooks/exhaustive-deps */
   const { label: hiresLabel, faviconSec: docFaviconSec } = useMemo(
@@ -620,45 +593,6 @@ export default function HitsDifferentApp() {
     viewRef.current = view
     doneOpenRef.current = doneOpen
   }, [view, doneOpen])
-
-  const handleBrowserSpotifyPlaying = useCallback((playing: boolean) => {
-    browserSpotifyPlayingRef.current = playing
-    setBrowserSpotifyPlaying(playing)
-    if (viewRef.current !== 'session' || doneOpenRef.current) return
-    const a = timerAnchorRef.current
-    if (playing) {
-      if (!pausedRef.current) {
-        spotifyDrovePauseRef.current = true
-        if (a && a.pauseAt == null) {
-          if (a.mode === 'stopwatch') {
-            const now = Date.now()
-            a.accumulatedMs += now - a.runStartAt
-            a.pauseAt = now
-          } else {
-            a.pauseAt = Date.now()
-          }
-        }
-        pausedRef.current = true
-        setPaused(true)
-        setHiresTick((x) => x + 1)
-      }
-    } else if (spotifyDrovePauseRef.current) {
-      spotifyDrovePauseRef.current = false
-      if (a && a.pauseAt != null) {
-        if (a.mode === 'stopwatch') {
-          a.runStartAt = Date.now()
-          a.pauseAt = null
-        } else {
-          const dt = Date.now() - a.pauseAt
-          a.endAt += dt
-          a.pauseAt = null
-        }
-      }
-      pausedRef.current = false
-      setPaused(false)
-      setHiresTick((x) => x + 1)
-    }
-  }, [])
 
   useEffect(() => {
     try {
@@ -749,8 +683,6 @@ export default function HitsDifferentApp() {
     }
   }, [paused, view, doneOpen, showToast, syncPipTimerWindow])
 
-  const onSpotifyWebError = useCallback((msg: string) => showToast(msg), [showToast])
-
   const clearTimer = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
@@ -764,9 +696,6 @@ export default function HitsDifferentApp() {
     tickSessionNumRef.current = 0
     setPaused(false)
     pausedRef.current = false
-    spotifyDrovePauseRef.current = false
-    browserSpotifyPlayingRef.current = false
-    setBrowserSpotifyPlaying(false)
     const entry: HistoryEntry = {
       task: taskTextRef.current,
       emoji: '🎵',
@@ -871,17 +800,6 @@ export default function HitsDifferentApp() {
       }, 50)
 
       setHiresTick((x) => x + 1)
-
-      if (browserSpotifyPlayingRef.current) {
-        spotifyDrovePauseRef.current = true
-        const a = timerAnchorRef.current
-        if (a && a.mode === 'timer' && a.pauseAt == null) {
-          a.pauseAt = Date.now()
-        }
-        pausedRef.current = true
-        setPaused(true)
-        setHiresTick((x) => x + 1)
-      }
     },
     [breakMins, clearTimer, focusMins],
   )
@@ -905,19 +823,6 @@ export default function HitsDifferentApp() {
       timerTickRef.current()
     }, 50)
     setHiresTick((x) => x + 1)
-
-    if (browserSpotifyPlayingRef.current) {
-      spotifyDrovePauseRef.current = true
-      const sw = timerAnchorRef.current
-      if (sw && sw.mode === 'stopwatch' && sw.pauseAt == null) {
-        const now = Date.now()
-        sw.accumulatedMs += now - sw.runStartAt
-        sw.pauseAt = now
-      }
-      pausedRef.current = true
-      setPaused(true)
-      setHiresTick((x) => x + 1)
-    }
   }, [clearTimer])
 
   useEffect(() => {
@@ -931,7 +836,6 @@ export default function HitsDifferentApp() {
   useEffect(() => () => clearTimer(), [clearTimer])
 
   const togglePause = useCallback(() => {
-    spotifyDrovePauseRef.current = false
     const nextPaused = !pausedRef.current
     const a = timerAnchorRef.current
     if (nextPaused) {
@@ -992,13 +896,11 @@ export default function HitsDifferentApp() {
     taskStartDelayTimeoutRef.current = window.setTimeout(() => {
       taskStartDelayTimeoutRef.current = null
       setView('session')
-      if (!isSignedIn) {
-        playDemoFocusIntro(
-          demoFocusAudioRef.current,
-          demoBreakAudioRef.current,
-          effectiveDemoVol,
-        )
-      }
+      playDemoFocusIntro(
+        demoFocusAudioRef.current,
+        demoBreakAudioRef.current,
+        effectiveDemoVol,
+      )
       window.setTimeout(() => {
         launchInProgressRef.current = false
         setTaskStartPending(false)
@@ -1009,7 +911,7 @@ export default function HitsDifferentApp() {
         }
       }, 0)
     }, TASK_START_DELAY_MS)
-  }, [effectiveDemoVol, isSignedIn, taskInput])
+  }, [effectiveDemoVol, taskInput])
 
   /** Pomodoro timer, no task line (session shows —). */
   const launchJustStart = useCallback(() => {
@@ -1032,9 +934,6 @@ export default function HitsDifferentApp() {
     demoBreakAudioRef.current?.pause()
     setPaused(false)
     pausedRef.current = false
-    spotifyDrovePauseRef.current = false
-    browserSpotifyPlayingRef.current = false
-    setBrowserSpotifyPlaying(false)
     setView('setup')
     setTaskInput('')
     taskTextRef.current = ''
@@ -1110,7 +1009,7 @@ export default function HitsDifferentApp() {
     const breakEl = demoBreakAudioRef.current
     if (!focusEl || !breakEl) return
 
-    if (view !== 'session' || doneOpen || isSignedIn) {
+    if (view !== 'session' || doneOpen) {
       pauseDemoAudio(focusEl, true)
       pauseDemoAudio(breakEl, true)
       return
@@ -1135,7 +1034,7 @@ export default function HitsDifferentApp() {
       focusEl.volume = effectiveDemoVol
       void focusEl.play().catch(() => {})
     }
-  }, [effectiveDemoVol, view, timerMode, paused, doneOpen, isSignedIn, selectedVibe])
+  }, [effectiveDemoVol, view, timerMode, paused, doneOpen, selectedVibe])
 
   const demoFocusSrc = sessionDemoFocusSrc(selectedVibe as Vibe)
   const demoBreakSrc = sessionDemoBreakSrc(selectedVibe as Vibe)
@@ -1146,10 +1045,7 @@ export default function HitsDifferentApp() {
 
   /** Setup: always play on landing. Session: same rules as music/timer (pause + dim when idle). */
   const bgVideoShouldPlay =
-    view === 'setup' ||
-    (view === 'session' &&
-      !doneOpen &&
-      (!isSignedIn ? !paused : browserSpotifyPlaying || !paused))
+    view === 'setup' || (view === 'session' && !doneOpen && !paused)
 
   /** Darken ambient video on setup (first paint) and whenever session “music” lane is idle. */
   const bgVideoDim =
@@ -1239,61 +1135,20 @@ export default function HitsDifferentApp() {
           <div className="min-w-0 justify-self-start">
             <HdWordmark onClick={restartSession} />
           </div>
-          <p
-            className={cn(
-              'pointer-events-none justify-self-center text-center',
-              HD_NAV_TEXT,
-              'text-white/55',
-            )}
-            aria-hidden
-          >
-            <span className="block text-white">Spotify</span>
-            <span className="block">Integrated</span>
-          </p>
+          <div className="pointer-events-none justify-self-center text-center" aria-hidden />
           <div className="flex min-w-0 justify-end justify-self-end">
-            {status === 'authenticated' ? (
-              <button
-                id="hdSpotifySignOut"
-                type="button"
-                className={cn(HD_TOP_BAR_BTN, HD_NAV_TEXT)}
-                onClick={() => signOutUser()}
-                title={user.email ?? ''}
-              >
-                <span className="block max-w-[min(9rem,32vw)] truncate text-white">
-                  {user.name ?? 'Spotify'}
-                </span>
-                <span className="inline-flex items-center gap-1 text-white/85">
-                  OUT
-                  <LogOut className={cn(HD_ICON, 'opacity-90')} strokeWidth={2.25} aria-hidden />
-                </span>
-              </button>
-            ) : (
-              <button
-                id="hdSpotifySignIn"
-                type="button"
-                className={cn(HD_TOP_BAR_BTN, HD_NAV_TEXT)}
-                onClick={() => signInWithSpotify()}
-              >
-                <span className="block uppercase text-white">CONNECT</span>
-                <LogIn className={cn(HD_ICON, 'self-end opacity-90')} strokeWidth={2.25} aria-hidden />
-              </button>
-            )}
+            <a
+              id="hdSpotifyOpen"
+              href="https://open.spotify.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(HD_TOP_BAR_BTN, HD_NAV_TEXT)}
+            >
+              <span className="block uppercase text-white">SPOTIFY</span>
+              <ExternalLink className={cn(HD_ICON, 'self-end opacity-90')} strokeWidth={2.25} aria-hidden />
+            </a>
           </div>
         </div>
-        {spotifyPlaybackNotice ? (
-          <p
-            className={cn(
-              'ml-auto max-w-[min(320px,calc(100vw-2rem))] text-right tracking-wide text-amber-200/85',
-              HD_TEXT_BODY,
-            )}
-            role="status"
-            aria-live="polite"
-          >
-            {spotifyPlaybackNotice === 'nonPremium'
-              ? 'Playback needs Spotify Premium and an active Spotify app or device.'
-              : 'Could not verify your Spotify account. Playback may need Premium and an active Spotify app or device.'}
-          </p>
-        ) : null}
       </div>
 
       <div
@@ -1534,27 +1389,9 @@ export default function HitsDifferentApp() {
                     className={cn(HD_TEXT_BODY, 'min-w-0 text-start tracking-wide text-white/65')}
                     id="npText"
                   >
-                    {isSignedIn
-                      ? `${user.name ?? 'Spotify'} · ${VIBE_TRACKS[selectedVibe] ?? selectedVibe}`
-                      : VIBE_TRACKS[selectedVibe] ?? `${selectedVibe} MIX`}
+                    {VIBE_TRACKS[selectedVibe] ?? `${selectedVibe} MIX`}
                   </div>
                 </div>
-                <SampleMixLinks
-                  browserPlay={
-                    isSignedIn &&
-                    spotifyAccountVerified &&
-                    spotifyPlaybackNotice === null ? (
-                      <SpotifyWebPlayer
-                        enabled={view === 'session' && !doneOpen}
-                        contextUri={spotifyPlaylistContextUri(
-                          VIBE_SAMPLE_PLAYLISTS[selectedVibe as Vibe].spotifyUrl,
-                        )}
-                        onSdkPlayingChange={handleBrowserSpotifyPlaying}
-                        onError={onSpotifyWebError}
-                      />
-                    ) : undefined
-                  }
-                />
               </div>
 
               <div className={HD_LEFT_TRANSPORT_STACK}>
@@ -1596,42 +1433,40 @@ export default function HitsDifferentApp() {
                     <PictureInPicture2 className={HD_ICON} strokeWidth={2.25} aria-hidden />
                     PiP
                   </button>
-                  {!isSignedIn ? (
-                    <div
-                      className={cn(
-                        'flex h-10 min-h-10 min-w-0 flex-1 items-center gap-2 px-2',
-                        HD_INPUT_CARD_CONTROL_CHROME,
-                      )}
+                  <div
+                    className={cn(
+                      'flex h-10 min-h-10 min-w-0 flex-1 items-center gap-2 px-2',
+                      HD_INPUT_CARD_CONTROL_CHROME,
+                    )}
+                  >
+                    <button
+                      type="button"
+                      className="inline-flex shrink-0 rounded border-0 bg-transparent p-0 text-white/45 outline-none transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-white/25"
+                      onClick={() => setDemoMuted((m) => !m)}
+                      aria-label={demoMuted ? 'Unmute demo mix' : 'Mute demo mix'}
+                      title={demoMuted ? 'Unmute' : 'Mute'}
                     >
-                      <button
-                        type="button"
-                        className="inline-flex shrink-0 rounded border-0 bg-transparent p-0 text-white/45 outline-none transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-white/25"
-                        onClick={() => setDemoMuted((m) => !m)}
-                        aria-label={demoMuted ? 'Unmute demo mix' : 'Mute demo mix'}
-                        title={demoMuted ? 'Unmute' : 'Mute'}
-                      >
-                        {demoMuted ? (
-                          <VolumeX className={HD_ICON} strokeWidth={2} aria-hidden />
-                        ) : (
-                          <Volume2 className={HD_ICON} strokeWidth={2} aria-hidden />
-                        )}
-                      </button>
-                      <input
-                        type="range"
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        value={demoTrackVol}
-                        onChange={(e) => {
-                          const v = Number(e.target.value)
-                          setDemoTrackVol(v)
-                          if (v > 0) setDemoMuted(false)
-                        }}
-                        className="min-h-4 min-w-0 flex-1 cursor-pointer accent-white/80"
-                        aria-label="Demo mix volume"
-                      />
-                    </div>
-                  ) : null}
+                      {demoMuted ? (
+                        <VolumeX className={HD_ICON} strokeWidth={2} aria-hidden />
+                      ) : (
+                        <Volume2 className={HD_ICON} strokeWidth={2} aria-hidden />
+                      )}
+                    </button>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      value={demoTrackVol}
+                      onChange={(e) => {
+                        const v = Number(e.target.value)
+                        setDemoTrackVol(v)
+                        if (v > 0) setDemoMuted(false)
+                      }}
+                      className="min-h-4 min-w-0 flex-1 cursor-pointer accent-white/80"
+                      aria-label="Demo mix volume"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
