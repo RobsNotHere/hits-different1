@@ -967,14 +967,22 @@ export default function HitsDifferentApp() {
     togglePauseRef.current = togglePause
   }, [togglePause])
 
-  const launch = useCallback(() => {
+  const launch = useCallback((options?: { skipTask?: boolean }) => {
     if (launchInProgressRef.current) return
-    const t = taskInput.trim().toUpperCase()
-    if (!t) return
+    const skipTask = options?.skipTask === true
+    const raw = taskInput.trim().toUpperCase()
+    const t = skipTask ? '' : raw
+    if (!skipTask && !t) return
     launchInProgressRef.current = true
     setTaskStartPending(true)
-    taskTextRef.current = t
-    setTaskText(t)
+    if (skipTask) {
+      setTaskInput('')
+      taskTextRef.current = ''
+      setTaskText('')
+    } else {
+      taskTextRef.current = t
+      setTaskText(t)
+    }
 
     playUiNoti(TASK_START_NOTI_SRC, TASK_START_NOTI_VOL)
 
@@ -1002,6 +1010,14 @@ export default function HitsDifferentApp() {
       }, 0)
     }, TASK_START_DELAY_MS)
   }, [effectiveDemoVol, isSignedIn, taskInput])
+
+  /** Pomodoro timer, no task line (session shows —). */
+  const launchJustStart = useCallback(() => {
+    if (taskStartPending || launchInProgressRef.current) return
+    timekeepingModeRef.current = 'timer'
+    setTimekeepingMode('timer')
+    launch({ skipTask: true })
+  }, [launch, taskStartPending])
 
   const restartSession = useCallback(() => {
     if (taskStartDelayTimeoutRef.current != null) {
@@ -1449,6 +1465,20 @@ export default function HitsDifferentApp() {
                     </div>
                   </div>
                 </div>
+                  <button
+                    type="button"
+                    className={cn(
+                      'mt-4 flex w-full cursor-pointer items-center justify-start gap-2 border-0 bg-transparent px-2 py-2 text-start tracking-[0.12em] text-white/75 outline-none transition-colors hover:text-white focus-visible:underline focus-visible:underline-offset-4 disabled:pointer-events-none disabled:opacity-50',
+                      HD_FONT_UI,
+                      'text-[clamp(1.125rem,3.8cqw,1.5rem)]',
+                    )}
+                    aria-label="Start session without a task"
+                    disabled={taskStartPending}
+                    onClick={launchJustStart}
+                  >
+                    Just start bruh
+                    <ArrowRight className="h-[1.1em] w-[1.1em] shrink-0 opacity-90" strokeWidth={2} aria-hidden />
+                  </button>
                 </div>
               </div>
             </div>
