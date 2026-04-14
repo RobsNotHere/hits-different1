@@ -1,8 +1,27 @@
 import { cn } from '@/lib/cn'
 
-/** Top nav: one font/size for wordmark, tagline, and actions (2-line cells). */
-export const HD_NAV_TEXT =
-  'font-[family-name:var(--font-inter)] text-[10px] font-normal leading-[1.15] tracking-[0.12em] antialiased'
+/**
+ * Global UI type (Inter, 16px). Use **one** of:
+ * - `HD_TEXT_BODY` — default paragraphs, lists, toasts, most controls (`leading-snug`).
+ * - `HD_NAV_TEXT` — top bar / wordmark (tighter line height + tracking).
+ * - `cn(HD_FONT_UI, 'leading-none', …)` — single-line buttons, compact rows.
+ */
+export const HD_FONT_UI =
+  'font-[family-name:var(--font-inter)] text-[16px] antialiased'
+
+export const HD_TEXT_BODY = cn(HD_FONT_UI, 'leading-snug')
+
+/** Top nav: wordmark, tagline, and actions (2-line cells). */
+export const HD_NAV_TEXT = cn(
+  HD_FONT_UI,
+  'font-normal leading-[1.2] tracking-[0.08em]',
+)
+
+/** Task field: typed line (inherits `HD_TEXT_BODY`) + 18px placeholder token. */
+export const HD_TASK_INPUT_VALUE = cn(HD_TEXT_BODY, 'text-white caret-white')
+
+export const HD_TASK_INPUT_PLACEHOLDER =
+  'placeholder:font-[family-name:var(--font-inter)] placeholder:text-[18px] placeholder:uppercase placeholder:leading-snug placeholder:tracking-[0.08em] placeholder:text-white/40'
 
 /** Top bar CTA: column layout, matches `HD_NAV_TEXT`. */
 export const HD_TOP_BAR_BTN =
@@ -11,17 +30,47 @@ export const HD_TOP_BAR_BTN =
 /** Vertical spacing between stage, labels, and inputs (setup + session left columns). */
 export const HD_COLUMN_STACK_GAP = 'gap-4'
 
+/** Euclid display: setup page title (`#hdPageTitle`) + session task line (`#s2Task`). */
+export const HD_DISPLAY_TITLE =
+  'font-[family-name:var(--font-euclid-flex)] text-[64px] leading-none tracking-[0.1em] text-white'
+
+/** Lucide icons beside `HD_TEXT_BODY` / `HD_FONT_UI` (~1.25× 16px cap). */
+export const HD_ICON = 'size-5 shrink-0'
+
+/** Larger icons: headers, spinners, primary row actions (~24px). */
+export const HD_ICON_LG = 'size-6 shrink-0'
+
 /**
- * Main MM:SS display: Euclid Flex Ultra Light. Sized with **container width** (`cqw`) so the
- * clock scales to fill the left rail — parent must set `@container` + `min-w-0` (see `#s1Left` / `#s2Left`).
+ * Session countdown (`#timerNum`): Euclid, scales with **container width** (`cqw`). Parent `#s2Left`
+ * sets `@container` + `min-w-0` (same band as `HD_LEFT_STAGE_MAX`). Inline under task title when running.
  * `min(…cqw, …vmin)` keeps mobile / short viewports sane; cap matches previous 280px feel.
  */
 export const HD_TIMER_DISPLAY =
-  'font-[family-name:var(--font-euclid-flex)] block w-full min-w-0 max-w-full text-[clamp(2.5rem,min(28cqw,34vmin),280px)] leading-none tracking-[0.05em] tabular-nums'
+  'font-[family-name:var(--font-euclid-flex)] block w-full min-w-0 max-w-full text-start text-[clamp(2.5rem,min(28cqw,34vmin),280px)] leading-none tracking-[0.05em] tabular-nums'
+
+/**
+ * Left column max width: task stack + inline timer + transport (`#s1Left` / `#s2Left` set `@container`).
+ */
+export const HD_LEFT_STAGE_MAX =
+  'max-w-[min(100%,min(92cqw,40rem))]'
+
+/** Setup / session copy + inputs: same horizontal cap as `HD_LEFT_STAGE_MAX`. */
+export const HD_LEFT_STAGE_COLUMN = cn(
+  'mx-auto flex w-full min-w-0 shrink-0 flex-col text-start',
+  HD_LEFT_STAGE_MAX,
+)
+
+/** Session transport row: same width as timer + task column. */
+export const HD_LEFT_TRANSPORT_STACK = cn(
+  'relative z-[5] mx-auto flex w-full min-w-0 shrink-0 flex-col gap-2',
+  HD_LEFT_STAGE_MAX,
+)
 
 /** © fixed to viewport bottom-right (full page), above main content, below toast. */
-export const HD_VIEWPORT_COPYRIGHT =
-  'pointer-events-none fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-4 z-[100] sm:right-6 whitespace-nowrap font-[family-name:var(--font-inter)] text-[9px] tracking-wide'
+export const HD_VIEWPORT_COPYRIGHT = cn(
+  'pointer-events-none fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-4 z-[100] sm:right-6 whitespace-nowrap leading-none tracking-wide',
+  HD_FONT_UI,
+)
 
 /**
  * Desktop “golden radio” grid: two tracks only — major : minor = φ : 1 (≈ 61.8% : 38.2%).
@@ -37,11 +86,13 @@ export const HD_MAIN_GRID_COLS_CLASS = 'lg:grid-cols-[5.562fr_3.438fr]'
  * - **Minor track (3.438)** → vertical bottom inset / stage footroom: `3.438vmin` scaled to
  *   `clamp(0.75rem, 3.438vmin, 2.75rem)` so the big clock sits above the fold and safe-area.
  * - **Top breathing room** (lighter): `2.5vmin` cap for `lg:pt` so the header → title gap stays proportional.
+ * - **Below `lg`**: `max-lg:pt-[…]` reserves space for the fixed `#hdTopBar` (wordmark + optional notice) and
+ *   `env(safe-area-inset-top)` — padding only, no `h-*` / `min-h-*` changes on the shell.
  *
  * The grid columns remain `5.562fr | 3.438fr`; padding uses the *same numbers* so margins and columns feel unified.
  */
 export const HD_PAGE_FRAME =
-  'box-border max-lg:px-4 max-lg:pb-4 lg:px-[clamp(1rem,5.562vmin,4rem)] lg:pb-[clamp(0.75rem,3.438vmin,2.75rem)] lg:pt-[clamp(0.5rem,2.5vmin,1.75rem)]'
+  'box-border max-lg:px-4 max-lg:pb-4 max-lg:pt-[max(8rem,calc(env(safe-area-inset-top)+5.5rem))] lg:px-[clamp(1rem,5.562vmin,4rem)] lg:pb-[clamp(0.75rem,3.438vmin,2.75rem)] lg:pt-[clamp(0.5rem,2.5vmin,1.75rem)]'
 
 /** Match `#hdTopBar` horizontal inset to `HD_PAGE_FRAME` on large screens (no double margin). */
 export const HD_TOP_BAR_INSET_X =
@@ -62,7 +113,7 @@ export const HD_SETUP_TITLE_TO_INPUT_GAP = 'gap-[clamp(1rem,2.75vmin,1.35rem)]'
 
 /** Minor column: horizontal vibe rail + “Deep focus” label. */
 export const HD_TICKER_COLUMN_SHELL =
-  'relative flex min-h-[5.25rem] min-w-0 w-full shrink-0 flex-col overflow-hidden py-2 max-lg:px-3 sm:max-lg:px-4 lg:h-full lg:min-h-0 lg:py-3 lg:pl-5 lg:pr-2'
+  'relative flex min-h-[8rem] min-w-0 w-full shrink-0 flex-col overflow-hidden py-2 max-lg:px-3 sm:max-lg:px-4 lg:h-full lg:min-h-0 lg:py-3 lg:pl-5 lg:pr-2'
 
 export function hdMainGridShellClass(
   mode: 'setup' | 'session',

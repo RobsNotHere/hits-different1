@@ -15,6 +15,8 @@ export type SpotifyPlayerInstance = {
   activateElement?: () => Promise<void>
   /** Stops current Web Playback output before starting a new context (avoids brief overlap). */
   pause?: () => Promise<void>
+  /** 0–1; medium–low default keeps first play audible without blasting. */
+  setVolume?: (volume: number) => Promise<void>
 }
 
 type SpotifyPlayerCtor = new (options: {

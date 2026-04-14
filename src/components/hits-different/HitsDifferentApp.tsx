@@ -14,6 +14,7 @@ import {
   Play,
   RotateCcw,
   Volume2,
+  VolumeX,
   X,
 } from 'lucide-react'
 import {
@@ -51,10 +52,18 @@ import {
 import { spotifyPlaylistContextUri } from '@/lib/hits-different/spotifyPlaylistUri'
 import {
   HD_COLUMN_STACK_GAP,
+  HD_DISPLAY_TITLE,
+  HD_ICON,
+  HD_ICON_LG,
+  HD_LEFT_STAGE_COLUMN,
+  HD_LEFT_TRANSPORT_STACK,
   HD_NAV_TEXT,
   HD_PAGE_FRAME,
-  HD_SETUP_TIMER_STAGE_PAD_BOTTOM,
   HD_SETUP_TITLE_TO_INPUT_GAP,
+  HD_FONT_UI,
+  HD_TASK_INPUT_PLACEHOLDER,
+  HD_TASK_INPUT_VALUE,
+  HD_TEXT_BODY,
   HD_TIMER_DISPLAY,
   HD_TOP_BAR_BTN,
   HD_TOP_BAR_INSET_MAX_LG,
@@ -145,16 +154,11 @@ function SampleMixLinks({ browserPlay }: { browserPlay?: ReactNode }) {
 const HD_INPUT_CARD_CONTROL_CHROME =
   'rounded-md border-0 bg-black/38 outline-none ring-1 ring-inset ring-white/[0.1] transition-colors focus-visible:ring-2 focus-visible:ring-white/25'
 
-const HD_CONTENT_COLUMN =
-  'mx-auto flex w-full min-w-0 max-w-[min(420px,100%)] shrink-0 flex-col text-start'
-const HD_TIMER_RAIL = 'mx-auto w-full min-w-0 max-w-[min(420px,100%)] text-start'
-const HD_TRANSPORT_STACK =
-  'relative z-[5] mx-auto flex w-full min-w-0 max-w-[min(420px,100%)] shrink-0 flex-col gap-2'
-
 const HD_STAGE_STACK = cn('flex w-full flex-col items-center', HD_COLUMN_STACK_GAP)
 
 const HD_TRANSPORT_INSET_BTN = cn(
-  'inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 px-3 font-[family-name:var(--font-inter)] text-[11px] leading-none text-white/80 hover:text-white',
+  'inline-flex h-10 min-h-10 shrink-0 cursor-pointer items-center gap-1.5 px-3 leading-none text-white/80 hover:text-white',
+  HD_FONT_UI,
   HD_INPUT_CARD_CONTROL_CHROME,
 )
 
@@ -232,19 +236,20 @@ function TimerModeSelect({
           left: menuBox.left,
           width: menuBox.width,
         }}
-        className="z-[320] max-h-[min(220px,36vh)] overflow-y-auto rounded-md bg-black/38 py-0.5 shadow-[0_8px_24px_rgba(0,0,0,0.45)] ring-1 ring-inset ring-white/[0.1] [scrollbar-color:rgba(255,255,255,0.15)_transparent] [scrollbar-width:thin]"
+        className="z-[320] max-h-[min(320px,44vh)] overflow-y-auto rounded-md bg-transparent py-1 [scrollbar-color:rgba(255,255,255,0.15)_transparent] [scrollbar-width:thin]"
       >
-        {TIMER_MODE_PRESETS.map((m) => (
+        {TIMER_MODE_PRESETS.filter((m) => m.id !== modeId).map((m) => (
           <li key={m.id} role="presentation">
             <button
               type="button"
               role="option"
               aria-selected={m.id === modeId}
               className={cn(
-                'flex w-full cursor-pointer items-center px-2 py-1.5 text-left font-[family-name:var(--font-inter)] text-[11px] leading-none transition-colors',
+                'flex w-full cursor-pointer items-center rounded-sm border border-transparent px-2 py-2 text-left transition-colors',
+                HD_TEXT_BODY,
                 m.id === modeId
-                  ? 'bg-white/[0.1] text-white'
-                  : 'text-white/80 hover:bg-white/10 hover:text-white',
+                  ? 'text-white hover:border-white/35'
+                  : 'text-white/80 hover:border-white/35 hover:text-white',
               )}
               onClick={() => {
                 onSelectMode(m.id)
@@ -262,7 +267,7 @@ function TimerModeSelect({
     <div
       ref={containerRef}
       id="timerModePicker"
-      className="relative min-w-0 max-w-[min(160px,46vw)] shrink-0"
+      className="relative min-w-0 max-w-[min(240px,52vw)] shrink-0"
     >
       <button
         ref={triggerRef}
@@ -272,16 +277,20 @@ function TimerModeSelect({
         aria-expanded={open}
         aria-label="Session mode"
         className={cn(
-          'flex h-8 w-full min-w-0 cursor-pointer items-center justify-between gap-0.5 py-0 pl-1.5 pr-1 text-left font-[family-name:var(--font-inter)] text-[11px] leading-none',
-          HD_INPUT_CARD_CONTROL_CHROME,
-          open ? 'text-white' : 'text-white/80 hover:text-white',
+          'flex h-10 min-h-10 w-full min-w-0 cursor-pointer items-center justify-between gap-0.5 rounded-md border border-transparent bg-transparent py-0 pl-2 pr-1.5 text-left outline-none ring-0 transition-[color,border-color]',
+          HD_TEXT_BODY,
+          'focus-visible:ring-2 focus-visible:ring-white/25',
+          open
+            ? 'border-white/40 text-white'
+            : 'text-white/80 hover:border-white/40 hover:text-white',
         )}
         onClick={() => setOpen((o) => !o)}
       >
         <span className="min-w-0 flex-1 truncate">{current.label}</span>
         <ChevronDown
           className={cn(
-            'size-3 shrink-0 text-white/55 transition-transform duration-150 ease-out',
+            HD_ICON,
+            'text-white/55 transition-transform duration-150 ease-out',
             open && 'rotate-180',
           )}
           aria-hidden
@@ -322,7 +331,8 @@ function playSubtleLapApproachChime(): void {
   }
 }
 
-const DEFAULT_DEMO_TRACK_VOL = 0.32
+/** Medium–low default so the demo mix is audible on session start (not silent / not full blast). */
+const DEFAULT_DEMO_TRACK_VOL = 0.38
 const DEMO_TRACK_VOL_STORAGE_KEY = 'hd-demo-track-vol'
 
 function readStoredDemoTrackVol(): number {
@@ -373,6 +383,7 @@ function playDemoFocusIntro(
 ): void {
   if (!focusEl || !breakEl) return
   pauseDemoAudio(breakEl, true)
+  focusEl.muted = false
   focusEl.volume = volume
   void focusEl.play().catch(() => {})
 }
@@ -392,6 +403,8 @@ export default function HitsDifferentApp() {
   const [breakMins, setBreakMins] = useState(5)
   const [totalSessions, setTotalSessions] = useState(6)
   const [demoTrackVol, setDemoTrackVol] = useState(readStoredDemoTrackVol)
+  const [demoMuted, setDemoMuted] = useState(false)
+  const effectiveDemoVol = demoMuted ? 0 : demoTrackVol
 
   const [curSession, setCurSession] = useState(1)
   const [timerMode, setTimerMode] = useState('FOCUS')
@@ -466,9 +479,15 @@ export default function HitsDifferentApp() {
     }
     const focusEl = demoFocusAudioRef.current
     const breakEl = demoBreakAudioRef.current
-    if (focusEl) focusEl.volume = demoTrackVol
-    if (breakEl) breakEl.volume = demoTrackVol
-  }, [demoTrackVol])
+    if (focusEl) {
+      focusEl.muted = false
+      focusEl.volume = effectiveDemoVol
+    }
+    if (breakEl) {
+      breakEl.muted = false
+      breakEl.volume = effectiveDemoVol
+    }
+  }, [demoTrackVol, effectiveDemoVol])
 
   const { notice: spotifyPlaybackNotice, accountVerified: spotifyAccountVerified } =
     useSpotifyPlaybackNotice(status)
@@ -480,11 +499,6 @@ export default function HitsDifferentApp() {
     [hiresTick, view, doneOpen],
   )
   /* eslint-enable react-hooks/refs, react-hooks/exhaustive-deps */
-  /** Setup / hidden session column: show chosen focus length (default 25 → 25:00). */
-  const focusLengthPreviewClock = useMemo(
-    () => fmtHires(focusMins * 60 * 1000),
-    [focusMins],
-  )
   useSessionTimerDocumentMeta(
     view === 'session' && !doneOpen,
     hiresLabel,
@@ -793,7 +807,11 @@ export default function HitsDifferentApp() {
       taskStartDelayTimeoutRef.current = null
       setView('session')
       if (!isSignedIn) {
-        playDemoFocusIntro(demoFocusAudioRef.current, demoBreakAudioRef.current, demoTrackVol)
+        playDemoFocusIntro(
+          demoFocusAudioRef.current,
+          demoBreakAudioRef.current,
+          effectiveDemoVol,
+        )
       }
       window.setTimeout(() => {
         launchInProgressRef.current = false
@@ -801,7 +819,7 @@ export default function HitsDifferentApp() {
         beginBlock(1)
       }, 0)
     }, TASK_START_DELAY_MS)
-  }, [beginBlock, demoTrackVol, isSignedIn, taskInput])
+  }, [beginBlock, effectiveDemoVol, isSignedIn, taskInput])
 
   const restartSession = useCallback(() => {
     if (taskStartDelayTimeoutRef.current != null) {
@@ -910,14 +928,16 @@ export default function HitsDifferentApp() {
 
     if (wantBreak) {
       pauseDemoAudio(focusEl, true)
-      breakEl.volume = demoTrackVol
+      breakEl.muted = false
+      breakEl.volume = effectiveDemoVol
       void breakEl.play().catch(() => {})
     } else {
       pauseDemoAudio(breakEl, true)
-      focusEl.volume = demoTrackVol
+      focusEl.muted = false
+      focusEl.volume = effectiveDemoVol
       void focusEl.play().catch(() => {})
     }
-  }, [demoTrackVol, view, timerMode, paused, doneOpen, isSignedIn, selectedVibe])
+  }, [effectiveDemoVol, view, timerMode, paused, doneOpen, isSignedIn, selectedVibe])
 
   const demoFocusSrc = sessionDemoFocusSrc(selectedVibe as Vibe)
   const demoBreakSrc = sessionDemoBreakSrc(selectedVibe as Vibe)
@@ -960,6 +980,7 @@ export default function HitsDifferentApp() {
           id="hdBgVideo"
           ref={bgVideoRef}
           className="absolute left-1/2 top-1/2 min-h-full min-w-full -translate-x-1/2 -translate-y-1/2 object-cover opacity-[0.92]"
+          autoPlay={view === 'setup'}
           muted
           loop
           playsInline
@@ -1044,7 +1065,7 @@ export default function HitsDifferentApp() {
                 </span>
                 <span className="inline-flex items-center gap-1 text-white/85">
                   OUT
-                  <LogOut className="size-3 shrink-0 opacity-90" strokeWidth={2.25} aria-hidden />
+                  <LogOut className={cn(HD_ICON, 'opacity-90')} strokeWidth={2.25} aria-hidden />
                 </span>
               </button>
             ) : (
@@ -1055,14 +1076,17 @@ export default function HitsDifferentApp() {
                 onClick={() => signInWithSpotify()}
               >
                 <span className="block uppercase text-white">CONNECT</span>
-                <LogIn className="size-3 shrink-0 self-end opacity-90" strokeWidth={2.25} aria-hidden />
+                <LogIn className={cn(HD_ICON, 'self-end opacity-90')} strokeWidth={2.25} aria-hidden />
               </button>
             )}
           </div>
         </div>
         {spotifyPlaybackNotice ? (
           <p
-            className="ml-auto max-w-[min(320px,calc(100vw-2rem))] text-right font-[family-name:var(--font-inter)] text-[9px] leading-snug tracking-wide text-amber-200/85"
+            className={cn(
+              'ml-auto max-w-[min(320px,calc(100vw-2rem))] text-right tracking-wide text-amber-200/85',
+              HD_TEXT_BODY,
+            )}
             role="status"
             aria-live="polite"
           >
@@ -1076,7 +1100,8 @@ export default function HitsDifferentApp() {
       <div
         id="toast"
         className={cn(
-          'pointer-events-none fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-[300] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-sm bg-white px-[22px] py-2.5 text-center font-[family-name:var(--font-inter)] text-[11px] tracking-wide text-hd-bg transition-all duration-300',
+          'pointer-events-none fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-[300] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-sm bg-white px-[22px] py-3 text-center tracking-wide text-hd-bg transition-all duration-300',
+          HD_TEXT_BODY,
           toast.show ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0',
         )}
       >
@@ -1092,7 +1117,7 @@ export default function HitsDifferentApp() {
       >
         <div className="flex items-center justify-between border-b border-white/[0.08] px-5 pb-3.5 pt-5">
           <div
-            className="font-[family-name:var(--font-inter)] text-[13px] font-normal uppercase tracking-[0.14em] text-white"
+            className={cn(HD_TEXT_BODY, 'font-normal uppercase tracking-[0.12em] text-white')}
             id="hdSessionLogTitle"
           >
             SESSION LOG
@@ -1103,13 +1128,13 @@ export default function HitsDifferentApp() {
             onClick={() => setHistoryOpen(false)}
             aria-label="Close session log"
           >
-            <X className="size-5" strokeWidth={2} aria-hidden />
+            <X className={HD_ICON_LG} strokeWidth={2} aria-hidden />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-3.5 [scrollbar-color:rgba(255,255,255,0.1)_transparent] [scrollbar-width:thin]" id="histList">
           {!sessionHistory.length ? (
             <div
-              className="mt-10 text-center font-[family-name:var(--font-inter)] text-[10px] tracking-wide text-white/25"
+              className={cn(HD_TEXT_BODY, 'mt-10 text-center tracking-wide text-white/25')}
               id="histEmpty"
             >
               No sessions yet.
@@ -1123,10 +1148,8 @@ export default function HitsDifferentApp() {
                 className="relative mb-2.5 rounded border border-white/[0.08] bg-white/[0.03] px-3.5 py-3"
               >
                 <div className="absolute right-3.5 top-3 text-lg">{s.emoji}</div>
-                <div className="mb-1 font-[family-name:var(--font-euclid-flex)] text-lg tracking-wide">
-                  {s.task}
-                </div>
-                <div className="font-[family-name:var(--font-inter)] text-[9px] tracking-wide text-white/40">
+                <div className={cn(HD_TEXT_BODY, 'mb-1 tracking-wide text-white')}>{s.task}</div>
+                <div className={cn(HD_TEXT_BODY, 'tracking-wide text-white/40')}>
                   {s.date} · {s.sessions} rounds · {s.vibe} · {s.duration}m focus
                 </div>
               </div>
@@ -1136,10 +1159,13 @@ export default function HitsDifferentApp() {
         <div className="border-t border-white/[0.08] px-5 pb-3.5 pt-3">
           <button
             type="button"
-            className="flex h-9 w-full cursor-pointer items-center justify-center gap-2 rounded-md border-0 bg-black/38 px-3 font-[family-name:var(--font-inter)] text-[11px] leading-none tracking-[0.12em] text-white/80 outline-none ring-1 ring-inset ring-white/[0.1] transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-white/25"
+            className={cn(
+              'flex h-11 min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md border-0 bg-black/38 px-3 leading-none tracking-[0.1em] text-white/80 outline-none ring-1 ring-inset ring-white/[0.1] transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-white/25',
+              HD_FONT_UI,
+            )}
             onClick={exportHistory}
           >
-            <Download className="size-3.5 shrink-0 opacity-90" strokeWidth={2.25} aria-hidden />
+            <Download className={cn(HD_ICON, 'opacity-90')} strokeWidth={2.25} aria-hidden />
             EXPORT SESSION LOG
           </button>
         </div>
@@ -1151,21 +1177,11 @@ export default function HitsDifferentApp() {
           className="@container relative z-[5] flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-transparent p-0 transition-colors duration-500 lg:min-h-0 lg:flex-none"
           id="s1Left"
         >
-          <div className="pointer-events-none absolute inset-0 z-0 flex min-h-0 flex-col justify-end overflow-hidden">
-            <div
-              className={cn(HD_TIMER_RAIL, HD_SETUP_TIMER_STAGE_PAD_BOTTOM)}
-              aria-hidden
-            >
-              <div className={cn(HD_TIMER_DISPLAY, 'text-white/[0.12]')}>
-                {focusLengthPreviewClock}
-              </div>
-            </div>
-          </div>
           <div className="relative z-[6] flex h-full min-h-0 flex-1 flex-col justify-center overflow-hidden">
             <div className={HD_STAGE_STACK}>
-              <div className={cn(HD_CONTENT_COLUMN, HD_SETUP_TITLE_TO_INPUT_GAP)}>
+              <div className={cn(HD_LEFT_STAGE_COLUMN, HD_SETUP_TITLE_TO_INPUT_GAP)}>
                 <h1
-                  className="relative z-[2] w-full shrink-0 text-start font-[family-name:var(--font-euclid-flex)] text-[clamp(26px,5vw,40px)] leading-none tracking-[0.1em] text-white"
+                  className={cn(HD_DISPLAY_TITLE, 'relative z-[2] w-full shrink-0 text-start')}
                   id="hdPageTitle"
                 >
                   POMO + VIBE
@@ -1175,7 +1191,7 @@ export default function HitsDifferentApp() {
                     className="hd-input-flare pointer-events-none absolute left-1/2 top-[46%] z-0 h-[min(280px,48vmin)] w-[min(122%,26rem)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse_52%_46%_at_50%_48%,rgba(255,252,240,0.5)_0%,rgba(255,234,190,0.26)_40%,rgba(245,200,95,0.12)_58%,transparent_76%)] blur-3xl"
                     aria-hidden
                   />
-                  <div className="relative z-[1] w-full overflow-hidden rounded-[8px] border border-[#CBCBCB] bg-transparent">
+                  <div className="relative z-[1] w-full overflow-hidden rounded-xl border border-[#CBCBCB] bg-transparent">
                   {taskStartPending ? (
                     <div
                       className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-black/45 px-4 backdrop-blur-[2px]"
@@ -1183,18 +1199,20 @@ export default function HitsDifferentApp() {
                       aria-busy="true"
                     >
                       <Loader2
-                        className="size-5 shrink-0 animate-spin text-white/70"
+                        className={cn(HD_ICON_LG, 'animate-spin text-white/70')}
                         strokeWidth={2}
                         aria-hidden
                       />
-                      <span className="font-[family-name:var(--font-inter)] text-[10px] tracking-[0.14em] text-white/75">
+                      <span className={cn(HD_TEXT_BODY, 'tracking-[0.1em] text-white/75')}>
                         STARTING SESSION…
                       </span>
                     </div>
                   ) : null}
                   <input
                     className={cn(
-                      'w-full min-w-0 border-0 bg-transparent px-4 py-3.5 text-start font-[family-name:var(--font-inter)] text-[14px] leading-snug text-white caret-white outline-none ring-0 ring-offset-0 focus:bg-transparent focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 active:bg-transparent placeholder:font-[family-name:var(--font-inter)] placeholder:text-[11px] placeholder:uppercase placeholder:leading-snug placeholder:tracking-[0.12em] placeholder:text-white/40',
+                      'box-border w-full min-h-[5.25rem] min-w-0 border-0 bg-transparent px-6 py-5 text-start outline-none ring-0 ring-offset-0 focus:bg-transparent focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 active:bg-transparent',
+                      HD_TASK_INPUT_VALUE,
+                      HD_TASK_INPUT_PLACEHOLDER,
                       taskStartPending && 'pointer-events-none opacity-60',
                     )}
                     id="taskInput"
@@ -1203,7 +1221,7 @@ export default function HitsDifferentApp() {
                     autoComplete="off"
                     aria-label="Enter your task — press Enter to start"
                     placeholder="WHAT ARE YOU WORKING ON?"
-                    maxLength={42}
+                    maxLength={40}
                     value={taskInput}
                     readOnly={taskStartPending}
                     onChange={(e) => setTaskInput(e.target.value)}
@@ -1216,19 +1234,20 @@ export default function HitsDifferentApp() {
                   />
                   <div
                     className={cn(
-                      'flex items-center justify-between gap-2 px-1.5 py-1.5',
+                      'flex min-h-[3.25rem] items-center justify-between gap-2 px-3 py-2.5',
                       taskStartPending && 'pointer-events-none opacity-60',
                     )}
                   >
                     <button
                       type="button"
                       id="hdSessionLogOpen"
-                      className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border-0 bg-transparent text-white/45 outline-none transition-colors duration-150 hover:text-white focus-visible:ring-2 focus-visible:ring-white/25"
-                      title="Session log"
-                      aria-label="Open session log"
-                      onClick={() => setHistoryOpen(true)}
+                      className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg border-0 bg-transparent text-white/45 outline-none transition-colors duration-150 hover:text-white focus-visible:ring-2 focus-visible:ring-white/25"
+                      title={historyOpen ? 'Close session log' : 'Session log'}
+                      aria-label={historyOpen ? 'Close session log' : 'Open session log'}
+                      aria-expanded={historyOpen}
+                      onClick={() => setHistoryOpen((o) => !o)}
                     >
-                      <List className="size-[18px]" strokeWidth={2} aria-hidden />
+                      <List className={HD_ICON_LG} strokeWidth={2} aria-hidden />
                     </button>
                     <TimerModeSelect modeId={activeModeId} onSelectMode={applyTimerMode} />
                   </div>
@@ -1254,41 +1273,38 @@ export default function HitsDifferentApp() {
           className="@container relative z-[5] flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden bg-transparent p-0 lg:min-h-0 lg:flex-none"
           id="s2Left"
         >
-          <div className="pointer-events-none absolute inset-0 z-0 flex min-h-0 flex-col justify-end overflow-hidden">
-            <div className={cn(HD_TIMER_RAIL, HD_SETUP_TIMER_STAGE_PAD_BOTTOM)}>
-              <span
-                id="timerNum"
-                className={cn(
-                  HD_TIMER_DISPLAY,
-                  'text-white tabular-nums',
-                  paused &&
-                    '[text-shadow:0_0_1px_rgba(0,0,0,0.9),0_2px_28px_rgba(255,255,255,0.35)]',
-                )}
-              >
-                {hiresLabel}
-              </span>
-            </div>
-          </div>
           <div className="relative z-[6] flex min-h-0 w-full min-w-0 flex-1 flex-col justify-center overflow-hidden">
             <div className={HD_STAGE_STACK}>
-              <div className={cn(HD_CONTENT_COLUMN, HD_COLUMN_STACK_GAP)}>
-                <div
-                  className="font-[family-name:var(--font-euclid-flex)] text-[clamp(26px,5vw,40px)] leading-none tracking-[0.1em] text-white"
-                  id="s2Task"
-                >
+              <div className={cn(HD_LEFT_STAGE_COLUMN, HD_COLUMN_STACK_GAP)}>
+                <div className={HD_DISPLAY_TITLE} id="s2Task">
                   {taskText || '—'}
                 </div>
+                {!doneOpen ? (
+                  <div className="w-full text-start" aria-live="polite" aria-atomic="true">
+                    <span
+                      id="timerNum"
+                      className={cn(
+                        HD_TIMER_DISPLAY,
+                        'text-white tabular-nums',
+                        paused &&
+                          '[text-shadow:0_0_1px_rgba(0,0,0,0.9),0_2px_28px_rgba(255,255,255,0.35)]',
+                      )}
+                    >
+                      {hiresLabel}
+                    </span>
+                  </div>
+                ) : null}
                 <div
-                  className="flex w-full min-w-0 max-w-full items-center justify-start gap-2 rounded-full bg-black/28 px-3 py-1.5"
+                  className="flex w-full min-w-0 max-w-full items-center justify-start gap-2 rounded-full bg-black/28 px-3 py-2"
                   id="nowPlaying"
                 >
-                  <div className="flex h-[11px] shrink-0 items-end gap-0.5">
+                  <div className="flex h-[14px] shrink-0 items-end gap-0.5">
                     <div className="w-[3px] self-end rounded-sm bg-white [animation:hd-bar_0.55s_ease-in-out_infinite_alternate]" />
                     <div className="w-[3px] self-end rounded-sm bg-white [animation:hd-bar_0.55s_ease-in-out_infinite_alternate] [animation-delay:0.15s]" />
                     <div className="w-[3px] self-end rounded-sm bg-white [animation:hd-bar_0.55s_ease-in-out_infinite_alternate] [animation-delay:0.3s]" />
                   </div>
                   <div
-                    className="min-w-0 text-start font-[family-name:var(--font-inter)] text-[9.5px] tracking-wide text-white/65"
+                    className={cn(HD_TEXT_BODY, 'min-w-0 text-start tracking-wide text-white/65')}
                     id="npText"
                   >
                     {isSignedIn
@@ -1314,16 +1330,17 @@ export default function HitsDifferentApp() {
                 />
               </div>
 
-              <div className={HD_TRANSPORT_STACK}>
+              <div className={HD_LEFT_TRANSPORT_STACK}>
                 <div className="flex w-full min-w-0 flex-nowrap items-center gap-2">
                   <button type="button" className={HD_TRANSPORT_INSET_BTN} onClick={restartSession}>
-                    <RotateCcw className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+                    <RotateCcw className={HD_ICON} strokeWidth={2.25} aria-hidden />
                     RESET
                   </button>
                   <button
                     type="button"
                     className={cn(
-                      'inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border px-3 font-[family-name:var(--font-inter)] text-[11px] leading-none tracking-wide transition-colors outline-none focus-visible:ring-2 focus-visible:ring-white/25',
+                      'inline-flex h-10 min-h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border px-3 leading-none tracking-wide transition-colors outline-none focus-visible:ring-2 focus-visible:ring-white/25',
+                      HD_FONT_UI,
                       paused
                         ? 'border-white/45 bg-white/22 text-white hover:bg-white/30'
                         : 'border-transparent bg-white text-hd-bg hover:bg-zinc-200',
@@ -1333,12 +1350,12 @@ export default function HitsDifferentApp() {
                   >
                     {paused ? (
                       <>
-                        <Play className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+                        <Play className={HD_ICON} strokeWidth={2.25} aria-hidden />
                         RESUME
                       </>
                     ) : (
                       <>
-                        <Pause className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+                        <Pause className={HD_ICON} strokeWidth={2.25} aria-hidden />
                         PAUSE
                       </>
                     )}
@@ -1349,28 +1366,40 @@ export default function HitsDifferentApp() {
                     title="Floating timer window (Chrome / Edge)"
                     onClick={() => void openTimerPictureInPicture()}
                   >
-                    <PictureInPicture2 className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+                    <PictureInPicture2 className={HD_ICON} strokeWidth={2.25} aria-hidden />
                     PiP
                   </button>
                   {!isSignedIn ? (
                     <div
                       className={cn(
-                        'flex h-8 min-h-8 min-w-0 flex-1 items-center gap-2 px-2',
+                        'flex h-10 min-h-10 min-w-0 flex-1 items-center gap-2 px-2',
                         HD_INPUT_CARD_CONTROL_CHROME,
                       )}
                     >
-                      <Volume2
-                        className="size-3.5 shrink-0 text-white/45"
-                        strokeWidth={2}
-                        aria-hidden
-                      />
+                      <button
+                        type="button"
+                        className="inline-flex shrink-0 rounded border-0 bg-transparent p-0 text-white/45 outline-none transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-white/25"
+                        onClick={() => setDemoMuted((m) => !m)}
+                        aria-label={demoMuted ? 'Unmute demo mix' : 'Mute demo mix'}
+                        title={demoMuted ? 'Unmute' : 'Mute'}
+                      >
+                        {demoMuted ? (
+                          <VolumeX className={HD_ICON} strokeWidth={2} aria-hidden />
+                        ) : (
+                          <Volume2 className={HD_ICON} strokeWidth={2} aria-hidden />
+                        )}
+                      </button>
                       <input
                         type="range"
                         min={0}
                         max={1}
                         step={0.01}
                         value={demoTrackVol}
-                        onChange={(e) => setDemoTrackVol(Number(e.target.value))}
+                        onChange={(e) => {
+                          const v = Number(e.target.value)
+                          setDemoTrackVol(v)
+                          if (v > 0) setDemoMuted(false)
+                        }}
                         className="min-h-4 min-w-0 flex-1 cursor-pointer accent-white/80"
                         aria-label="Demo mix volume"
                       />
@@ -1397,7 +1426,7 @@ export default function HitsDifferentApp() {
               TRACK DONE
             </div>
             <div
-              className="mt-1.5 font-[family-name:var(--font-inter)] text-[10px] tracking-wide text-white/45"
+              className={cn(HD_TEXT_BODY, 'mt-1.5 tracking-wide text-white/45')}
               id="doneSub"
             >
               {focusMins} min · {selectedVibe}
@@ -1405,19 +1434,25 @@ export default function HitsDifferentApp() {
             <div className="mt-5 flex w-full max-w-[min(100%,20rem)] flex-col gap-2.5 sm:max-w-none sm:flex-row sm:justify-center">
               <button
                 type="button"
-                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border-[1.5px] border-white/30 bg-transparent px-5 py-2.5 font-[family-name:var(--font-euclid-flex)] text-lg tracking-wide text-white transition-colors hover:border-white"
+                className={cn(
+                  HD_TEXT_BODY,
+                  'inline-flex cursor-pointer items-center justify-center gap-2 rounded border-[1.5px] border-white/30 bg-transparent px-5 py-3 font-normal tracking-wide text-white transition-colors hover:border-white',
+                )}
                 onClick={exportAlbumCover}
               >
-                <Download className="size-4 shrink-0" strokeWidth={2} aria-hidden />
+                <Download className={HD_ICON_LG} strokeWidth={2} aria-hidden />
                 SAVE COVER
               </button>
               <button
                 type="button"
-                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border-0 bg-white px-5 py-2.5 font-[family-name:var(--font-euclid-flex)] text-lg tracking-wide text-hd-bg transition-colors hover:bg-zinc-200"
+                className={cn(
+                  HD_TEXT_BODY,
+                  'inline-flex cursor-pointer items-center justify-center gap-2 rounded border-0 bg-white px-5 py-3 font-normal tracking-wide text-hd-bg transition-colors hover:bg-zinc-200',
+                )}
                 onClick={restartSession}
               >
                 NEW SESSION
-                <ArrowRight className="size-4 shrink-0" strokeWidth={2} aria-hidden />
+                <ArrowRight className={HD_ICON_LG} strokeWidth={2} aria-hidden />
               </button>
             </div>
           </div>

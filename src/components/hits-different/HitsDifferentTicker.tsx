@@ -13,7 +13,7 @@ import {
 } from 'react'
 import { cn } from '@/lib/cn'
 import { VIBES, type Vibe } from '@/lib/hits-different/data'
-import { HD_TICKER_COLUMN_SHELL } from '@/lib/hits-different/hdUiClasses'
+import { HD_TEXT_BODY, HD_TICKER_COLUMN_SHELL } from '@/lib/hits-different/hdUiClasses'
 
 type TickerWheelRegistry = {
   register: (fn: (deltaY: number) => void) => void
@@ -138,7 +138,8 @@ function VibeTickerButton({
       tabIndex={isGhost ? -1 : undefined}
       aria-hidden={isGhost ? true : undefined}
       className={cn(
-        'w-full cursor-pointer rounded bg-transparent px-1.5 py-1 text-start transition-colors hover:text-white/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 focus-visible:ring-offset-0',
+        HD_TEXT_BODY,
+        'w-full cursor-pointer rounded bg-transparent px-2 py-1.5 text-start transition-colors hover:text-white/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 focus-visible:ring-offset-0',
         visuallySelected
           ? 'font-semibold text-white underline decoration-white/45 underline-offset-[3px]'
           : 'font-normal text-white/35',
@@ -161,7 +162,10 @@ function StaticVibeList({
 }) {
   return (
     <nav
-      className="z-10 flex w-full min-w-0 flex-col gap-2 py-1 text-start font-[family-name:var(--font-inter)] text-[10px] leading-snug text-white/35"
+      className={cn(
+        'z-10 flex w-full min-w-0 flex-col gap-2 py-1 text-start text-white/35',
+        HD_TEXT_BODY,
+      )}
       id={id}
       aria-label="Music vibe"
     >
@@ -326,7 +330,10 @@ function WheelInfiniteVibeList({
         ref={trackRef}
         id={id}
         aria-label="Music vibe"
-        className="z-10 flex w-full min-w-0 flex-col gap-2 py-1 text-start font-[family-name:var(--font-inter)] text-[10px] leading-snug text-white/35 will-change-transform"
+        className={cn(
+          'z-10 flex w-full min-w-0 flex-col gap-2 py-1 text-start text-white/35 will-change-transform',
+          HD_TEXT_BODY,
+        )}
         style={{ transform: 'translateY(0)' }}
       >
         <div ref={segmentRef} className="flex flex-col gap-2">
@@ -370,17 +377,6 @@ function WheelInfiniteVibeList({
               visuallySelected={isVibeVisuallySelected(v, 3)}
               onPickVibe={onPickVibe}
               duplicateIndex={3}
-            />
-          ))}
-        </div>
-        <div className="flex flex-col gap-2" aria-hidden>
-          {VIBES.map((v) => (
-            <VibeTickerButton
-              key={`${id}-e-${v}`}
-              vibe={v}
-              visuallySelected={isVibeVisuallySelected(v, 4)}
-              onPickVibe={onPickVibe}
-              duplicateIndex={4}
             />
           ))}
         </div>

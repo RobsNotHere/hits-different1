@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { cn } from '@/lib/cn'
+import { HD_TEXT_BODY } from '@/lib/hits-different/hdUiClasses'
 import type { SpotifyPlaybackState, SpotifyPlayerInstance } from '@/types/spotify-web-playback'
 
 function loadSpotifySdk(): Promise<void> {
@@ -26,11 +28,16 @@ function loadSpotifySdk(): Promise<void> {
   })
 }
 
-const BTN_CLS =
-  'block w-full min-w-0 py-1 text-start font-[family-name:var(--font-inter)] text-[9px] tracking-wide text-white/55 underline decoration-white/25 underline-offset-2 transition-colors hover:text-white hover:decoration-white/50 disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline'
+const BTN_CLS = cn(
+  HD_TEXT_BODY,
+  'block w-full min-w-0 py-1.5 text-start tracking-wide text-white/55 underline decoration-white/25 underline-offset-2 transition-colors hover:text-white hover:decoration-white/50 disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline',
+)
 
 /** Debounce rapid vibe changes so only the last playlist is sent to Spotify. */
 const CONTEXT_RESYNC_MS = 80
+
+/** Medium–low default (not silent, not max) when starting in-browser playback. */
+const WEB_PLAYBACK_DEFAULT_VOL = 0.42
 
 type Props = {
   enabled: boolean
@@ -101,6 +108,7 @@ export function SpotifyWebPlayer({
       if (generation !== playGenerationRef.current) return false
       lastPlayedUriRef.current = uri
       userStartedPlaybackRef.current = true
+      await player.setVolume?.(WEB_PLAYBACK_DEFAULT_VOL).catch(() => {})
       return true
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Playback failed'
@@ -177,7 +185,7 @@ export function SpotifyWebPlayer({
                 onErrorRef.current?.('Could not refresh Spotify session')
               })
           },
-          volume: 0.85,
+          volume: WEB_PLAYBACK_DEFAULT_VOL,
         })
 
         player.addListener('ready', onReady)
