@@ -13,6 +13,8 @@ import {
   PictureInPicture2,
   Play,
   RotateCcw,
+  Timer,
+  Watch,
   Volume2,
   VolumeX,
   X,
@@ -80,25 +82,51 @@ function fmtHires(totalMs: number) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-/** Focus and break both use wall-clock `endAt` so the main clock counts down (Pomodoro). */
-type TimerAnchor = {
+/** Pomodoro phases: wall-clock `endAt` so the main clock counts down. */
+type PomodoroTimerAnchor = {
+  mode: 'timer'
   kind: 'focus' | 'break'
   endAt: number
   pauseAt: number | null
 }
 
-function getPhaseLeftMs(a: TimerAnchor, now: number): number {
+/** Count-up session: `accumulatedMs` plus optional running segment from `runStartAt`. */
+type StopwatchAnchor = {
+  mode: 'stopwatch'
+  runStartAt: number
+  accumulatedMs: number
+  pauseAt: number | null
+}
+
+type SessionAnchor = PomodoroTimerAnchor | StopwatchAnchor
+
+/** Setup: countdown Pomodoro vs count-up stopwatch (session behavior). */
+type TimekeepingMode = 'timer' | 'stopwatch'
+
+function getPhaseLeftMs(a: PomodoroTimerAnchor, now: number): number {
   const t = a.pauseAt ?? now
   return Math.max(0, a.endAt - t)
 }
 
+function getStopwatchElapsedMs(a: StopwatchAnchor, now: number): number {
+  if (a.pauseAt != null) return a.accumulatedMs
+  return a.accumulatedMs + (now - a.runStartAt)
+}
+
 function readSessionClock(
-  anchor: TimerAnchor | null,
+  anchor: SessionAnchor | null,
   view: 'setup' | 'session',
   doneOpen: boolean,
 ): { label: string; faviconSec: number } {
   if (!anchor || view !== 'session' || doneOpen) {
     return { label: '00:00', faviconSec: 0 }
+  }
+  if (anchor.mode === 'stopwatch') {
+    const elapsed = getStopwatchElapsedMs(anchor, Date.now())
+    return {
+      label: fmtHires(elapsed),
+      faviconSec: Math.floor(elapsed / 1000),
+    }
   }
   const now = anchor.pauseAt ?? Date.now()
   const leftMs = getPhaseLeftMs(anchor, now)
@@ -162,12 +190,19 @@ const HD_TRANSPORT_INSET_BTN = cn(
   HD_INPUT_CARD_CONTROL_CHROME,
 )
 
+/** Setup task card: log + timer/watch icon buttons (same default/hover as mode control). */
+const HD_SETUP_ICON_BTN =
+  'inline-flex size-10 shrink-0 items-center justify-center rounded-md border-0 bg-transparent outline-none transition-colors duration-150 text-white/80 hover:text-white focus-visible:ring-2 focus-visible:ring-white/25'
+
 function TimerModeSelect({
   modeId,
   onSelectMode,
+  disabled = false,
 }: {
   modeId: string
   onSelectMode: (id: string) => void
+  /** When true (e.g. stopwatch), presets stay visible but cannot be changed. */
+  disabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -207,6 +242,10 @@ function TimerModeSelect({
   }, [open, syncMenuPosition])
 
   useEffect(() => {
+    if (disabled) setOpen(false)
+  }, [disabled])
+
+  useEffect(() => {
     if (!open) return
     const onDoc = (e: MouseEvent) => {
       const t = e.target as Node
@@ -226,7 +265,7 @@ function TimerModeSelect({
   }, [open])
 
   const menu =
-    open && menuBox ? (
+    open && menuBox && !disabled ? (
       <ul
         ref={menuRef}
         role="listbox"
@@ -243,13 +282,13 @@ function TimerModeSelect({
             <button
               type="button"
               role="option"
-              aria-selected={m.id === modeId}
+              aria-selected={false}
               className={cn(
                 'flex w-full cursor-pointer items-center rounded-sm border border-transparent px-2 py-2 text-left transition-colors',
                 HD_TEXT_BODY,
                 m.id === modeId
-                  ? 'text-white hover:border-white/35'
-                  : 'text-white/80 hover:border-white/35 hover:text-white',
+                  ? 'text-white'
+                  : 'text-white/80 hover:text-white',
               )}
               onClick={() => {
                 onSelectMode(m.id)
@@ -274,15 +313,29 @@ function TimerModeSelect({
         type="button"
         id="timerModeSelect"
         aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label="Session mode"
+        aria-expanded={open && !disabled}
+        disabled={disabled}
+        title={
+          disabled
+            ? 'Pomodoro mode presets are unavailable while stopwatch is selected'
+            : undefined
+        }
+        aria-label={
+          disabled
+            ? 'Session mode — disabled while stopwatch is on'
+            : 'Session mode'
+        }
         className={cn(
-          'flex h-10 min-h-10 w-full min-w-0 cursor-pointer items-center justify-between gap-0.5 rounded-md border border-transparent bg-transparent py-0 pl-2 pr-1.5 text-left outline-none ring-0 transition-[color,border-color]',
+          'flex h-10 min-h-10 w-full min-w-0 items-center justify-between gap-0.5 rounded-md border border-transparent bg-transparent py-0 pl-2 pr-1.5 text-left outline-none ring-0 transition-[color,border-color,opacity]',
           HD_TEXT_BODY,
           'focus-visible:ring-2 focus-visible:ring-white/25',
-          open
-            ? 'border-white/40 text-white'
-            : 'text-white/80 hover:border-white/40 hover:text-white',
+          disabled
+            ? 'cursor-not-allowed opacity-45 text-white/45 ring-1 ring-inset ring-white/[0.14]'
+            : 'cursor-pointer',
+          !disabled &&
+            (open
+              ? 'border-white/40 text-white'
+              : 'text-white/80 hover:text-white'),
         )}
         onClick={() => setOpen((o) => !o)}
       >
@@ -291,15 +344,44 @@ function TimerModeSelect({
           className={cn(
             HD_ICON,
             'text-white/55 transition-transform duration-150 ease-out',
-            open && 'rotate-180',
+            /** Closed: point up; open: point down. */
+            !open && 'rotate-180',
           )}
           aria-hidden
           strokeWidth={2}
         />
       </button>
-      {typeof document !== 'undefined' && menu
-        ? createPortal(menu, document.body)
-        : null}
+      {menu ? createPortal(menu, document.body) : null}
+    </div>
+  )
+}
+
+function TimekeepingModeToggle({
+  mode,
+  onToggle,
+}: {
+  mode: TimekeepingMode
+  onToggle: (next: TimekeepingMode) => void
+}) {
+  const isStopwatch = mode === 'stopwatch'
+  return (
+    <div id="timekeepingModePicker" className="relative shrink-0">
+      <button
+        type="button"
+        id="timekeepingModeToggle"
+        role="switch"
+        aria-checked={isStopwatch}
+        aria-label={isStopwatch ? 'Switch to timer (countdown)' : 'Switch to stopwatch (count up)'}
+        title={isStopwatch ? 'Stopwatch — click for timer' : 'Timer — click for stopwatch'}
+        className={cn(HD_SETUP_ICON_BTN, HD_TEXT_BODY, 'border border-transparent ring-0', isStopwatch && 'text-white')}
+        onClick={() => onToggle(isStopwatch ? 'timer' : 'stopwatch')}
+      >
+        {isStopwatch ? (
+          <Watch className={HD_ICON_LG} strokeWidth={2} aria-hidden />
+        ) : (
+          <Timer className={HD_ICON_LG} strokeWidth={2} aria-hidden />
+        )}
+      </button>
     </div>
   )
 }
@@ -334,6 +416,18 @@ function playSubtleLapApproachChime(): void {
 /** Medium–low default so the demo mix is audible on session start (not silent / not full blast). */
 const DEFAULT_DEMO_TRACK_VOL = 0.38
 const DEMO_TRACK_VOL_STORAGE_KEY = 'hd-demo-track-vol'
+const TIMEKEEPING_MODE_STORAGE_KEY = 'hd-timekeeping-mode'
+
+function readStoredTimekeepingMode(): TimekeepingMode {
+  if (typeof window === 'undefined') return 'timer'
+  try {
+    const v = window.localStorage.getItem(TIMEKEEPING_MODE_STORAGE_KEY)
+    if (v === 'stopwatch' || v === 'timer') return v
+  } catch {
+    /* ignore */
+  }
+  return 'timer'
+}
 
 function readStoredDemoTrackVol(): number {
   if (typeof window === 'undefined') return DEFAULT_DEMO_TRACK_VOL
@@ -399,6 +493,7 @@ export default function HitsDifferentApp() {
   })
   const [taskInput, setTaskInput] = useState('')
   const [taskText, setTaskText] = useState('')
+  const [timekeepingMode, setTimekeepingMode] = useState<TimekeepingMode>(readStoredTimekeepingMode)
   const [focusMins, setFocusMins] = useState(25)
   const [breakMins, setBreakMins] = useState(5)
   const [totalSessions, setTotalSessions] = useState(6)
@@ -417,7 +512,8 @@ export default function HitsDifferentApp() {
   const [browserSpotifyPlaying, setBrowserSpotifyPlaying] = useState(false)
   const bgVideoRef = useRef<HTMLVideoElement>(null)
   const intervalRef = useRef<number | null>(null)
-  const timerAnchorRef = useRef<TimerAnchor | null>(null)
+  const timerAnchorRef = useRef<SessionAnchor | null>(null)
+  const timekeepingModeRef = useRef(timekeepingMode)
   const tickSessionNumRef = useRef(0)
   const totalSessionsRef = useRef(6)
   const finishRef = useRef<(n: number) => void>(() => {})
@@ -437,6 +533,15 @@ export default function HitsDifferentApp() {
   useEffect(() => {
     totalSessionsRef.current = totalSessions
   }, [totalSessions])
+
+  useEffect(() => {
+    timekeepingModeRef.current = timekeepingMode
+    try {
+      window.localStorage.setItem(TIMEKEEPING_MODE_STORAGE_KEY, timekeepingMode)
+    } catch {
+      /* ignore */
+    }
+  }, [timekeepingMode])
 
   const handleVibePick = useCallback((tickerId: string, v: Vibe, _duplicateIndex: number) => {
     setSelectedVibe(v)
@@ -467,6 +572,7 @@ export default function HitsDifferentApp() {
   }, [])
 
   const beginBlockRef = useRef<(sessionNum: number) => void>(() => {})
+  const beginStopwatchRef = useRef<() => void>(() => {})
   const demoFocusAudioRef = useRef<HTMLAudioElement>(null)
   const demoBreakAudioRef = useRef<HTMLAudioElement>(null)
   const lapApproachChimedForBlockRef = useRef<number | null>(null)
@@ -519,22 +625,34 @@ export default function HitsDifferentApp() {
     browserSpotifyPlayingRef.current = playing
     setBrowserSpotifyPlaying(playing)
     if (viewRef.current !== 'session' || doneOpenRef.current) return
+    const a = timerAnchorRef.current
     if (playing) {
       if (!pausedRef.current) {
         spotifyDrovePauseRef.current = true
-        const a = timerAnchorRef.current
-        if (a && a.pauseAt == null) a.pauseAt = Date.now()
+        if (a && a.pauseAt == null) {
+          if (a.mode === 'stopwatch') {
+            const now = Date.now()
+            a.accumulatedMs += now - a.runStartAt
+            a.pauseAt = now
+          } else {
+            a.pauseAt = Date.now()
+          }
+        }
         pausedRef.current = true
         setPaused(true)
         setHiresTick((x) => x + 1)
       }
     } else if (spotifyDrovePauseRef.current) {
       spotifyDrovePauseRef.current = false
-      const a = timerAnchorRef.current
       if (a && a.pauseAt != null) {
-        const dt = Date.now() - a.pauseAt
-        a.endAt += dt
-        a.pauseAt = null
+        if (a.mode === 'stopwatch') {
+          a.runStartAt = Date.now()
+          a.pauseAt = null
+        } else {
+          const dt = Date.now() - a.pauseAt
+          a.endAt += dt
+          a.pauseAt = null
+        }
       }
       pausedRef.current = false
       setPaused(false)
@@ -681,6 +799,11 @@ export default function HitsDifferentApp() {
     if (viewRef.current !== 'session' || doneOpenRef.current) return
     if (pausedRef.current) return
 
+    if (a.mode === 'stopwatch') {
+      setHiresTick((x) => x + 1)
+      return
+    }
+
     const now = Date.now()
     const total = totalSessionsRef.current
     const leftMs = getPhaseLeftMs(a, now)
@@ -729,12 +852,14 @@ export default function HitsDifferentApp() {
       const t0 = Date.now()
       if (isBreak) {
         timerAnchorRef.current = {
+          mode: 'timer',
           kind: 'break',
           endAt: t0 + breakMins * 60 * 1000,
           pauseAt: null,
         }
       } else {
         timerAnchorRef.current = {
+          mode: 'timer',
           kind: 'focus',
           endAt: t0 + focusMins * 60 * 1000,
           pauseAt: null,
@@ -750,7 +875,9 @@ export default function HitsDifferentApp() {
       if (browserSpotifyPlayingRef.current) {
         spotifyDrovePauseRef.current = true
         const a = timerAnchorRef.current
-        if (a && a.pauseAt == null) a.pauseAt = Date.now()
+        if (a && a.mode === 'timer' && a.pauseAt == null) {
+          a.pauseAt = Date.now()
+        }
         pausedRef.current = true
         setPaused(true)
         setHiresTick((x) => x + 1)
@@ -759,9 +886,47 @@ export default function HitsDifferentApp() {
     [breakMins, clearTimer, focusMins],
   )
 
+  const beginStopwatch = useCallback(() => {
+    clearTimer()
+    pausedRef.current = false
+    setPaused(false)
+    setTimerMode('FOCUS')
+    setCurSession(1)
+    tickSessionNumRef.current = 1
+    lapApproachChimedForBlockRef.current = null
+    const t0 = Date.now()
+    timerAnchorRef.current = {
+      mode: 'stopwatch',
+      runStartAt: t0,
+      accumulatedMs: 0,
+      pauseAt: null,
+    }
+    intervalRef.current = window.setInterval(() => {
+      timerTickRef.current()
+    }, 50)
+    setHiresTick((x) => x + 1)
+
+    if (browserSpotifyPlayingRef.current) {
+      spotifyDrovePauseRef.current = true
+      const sw = timerAnchorRef.current
+      if (sw && sw.mode === 'stopwatch' && sw.pauseAt == null) {
+        const now = Date.now()
+        sw.accumulatedMs += now - sw.runStartAt
+        sw.pauseAt = now
+      }
+      pausedRef.current = true
+      setPaused(true)
+      setHiresTick((x) => x + 1)
+    }
+  }, [clearTimer])
+
   useEffect(() => {
     beginBlockRef.current = beginBlock
   }, [beginBlock])
+
+  useEffect(() => {
+    beginStopwatchRef.current = beginStopwatch
+  }, [beginStopwatch])
 
   useEffect(() => () => clearTimer(), [clearTimer])
 
@@ -770,14 +935,27 @@ export default function HitsDifferentApp() {
     const nextPaused = !pausedRef.current
     const a = timerAnchorRef.current
     if (nextPaused) {
-      if (a && a.pauseAt == null) a.pauseAt = Date.now()
+      if (a && a.pauseAt == null) {
+        if (a.mode === 'stopwatch') {
+          const now = Date.now()
+          a.accumulatedMs += now - a.runStartAt
+          a.pauseAt = now
+        } else {
+          a.pauseAt = Date.now()
+        }
+      }
       pausedRef.current = true
       setPaused(true)
     } else {
       if (a && a.pauseAt != null) {
-        const dt = Date.now() - a.pauseAt
-        a.endAt += dt
-        a.pauseAt = null
+        if (a.mode === 'stopwatch') {
+          a.runStartAt = Date.now()
+          a.pauseAt = null
+        } else {
+          const dt = Date.now() - a.pauseAt
+          a.endAt += dt
+          a.pauseAt = null
+        }
       }
       pausedRef.current = false
       setPaused(false)
@@ -816,10 +994,14 @@ export default function HitsDifferentApp() {
       window.setTimeout(() => {
         launchInProgressRef.current = false
         setTaskStartPending(false)
-        beginBlock(1)
+        if (timekeepingModeRef.current === 'stopwatch') {
+          beginStopwatchRef.current()
+        } else {
+          beginBlockRef.current(1)
+        }
       }, 0)
     }, TASK_START_DELAY_MS)
-  }, [beginBlock, effectiveDemoVol, isSignedIn, taskInput])
+  }, [effectiveDemoVol, isSignedIn, taskInput])
 
   const restartSession = useCallback(() => {
     if (taskStartDelayTimeoutRef.current != null) {
@@ -942,7 +1124,8 @@ export default function HitsDifferentApp() {
   const demoFocusSrc = sessionDemoFocusSrc(selectedVibe as Vibe)
   const demoBreakSrc = sessionDemoBreakSrc(selectedVibe as Vibe)
 
-  const isBreakTint = view === 'session' && curSession % 2 === 0
+  const isBreakTint =
+    view === 'session' && timekeepingMode === 'timer' && curSession % 2 === 0
   const isDoneTint = doneOpen
 
   /** Setup: always play on landing. Session: same rules as music/timer (pause + dim when idle). */
@@ -1054,7 +1237,7 @@ export default function HitsDifferentApp() {
           <div className="flex min-w-0 justify-end justify-self-end">
             {status === 'authenticated' ? (
               <button
-                id="hdSpotifyNav"
+                id="hdSpotifySignOut"
                 type="button"
                 className={cn(HD_TOP_BAR_BTN, HD_NAV_TEXT)}
                 onClick={() => signOutUser()}
@@ -1070,7 +1253,7 @@ export default function HitsDifferentApp() {
               </button>
             ) : (
               <button
-                id="hdSpotifyNav"
+                id="hdSpotifySignIn"
                 type="button"
                 className={cn(HD_TOP_BAR_BTN, HD_NAV_TEXT)}
                 onClick={() => signInWithSpotify()}
@@ -1241,7 +1424,11 @@ export default function HitsDifferentApp() {
                     <button
                       type="button"
                       id="hdSessionLogOpen"
-                      className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg border-0 bg-transparent text-white/45 outline-none transition-colors duration-150 hover:text-white focus-visible:ring-2 focus-visible:ring-white/25"
+                      className={cn(
+                        HD_SETUP_ICON_BTN,
+                        'text-white/80',
+                        historyOpen && 'text-white',
+                      )}
                       title={historyOpen ? 'Close session log' : 'Session log'}
                       aria-label={historyOpen ? 'Close session log' : 'Open session log'}
                       aria-expanded={historyOpen}
@@ -1249,7 +1436,17 @@ export default function HitsDifferentApp() {
                     >
                       <List className={HD_ICON_LG} strokeWidth={2} aria-hidden />
                     </button>
-                    <TimerModeSelect modeId={activeModeId} onSelectMode={applyTimerMode} />
+                    <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+                      <TimerModeSelect
+                        modeId={activeModeId}
+                        onSelectMode={applyTimerMode}
+                        disabled={timekeepingMode === 'stopwatch'}
+                      />
+                      <TimekeepingModeToggle
+                        mode={timekeepingMode}
+                        onToggle={setTimekeepingMode}
+                      />
+                    </div>
                   </div>
                 </div>
                 </div>

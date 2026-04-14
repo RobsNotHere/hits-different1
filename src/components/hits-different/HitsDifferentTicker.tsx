@@ -80,6 +80,7 @@ export function TickerWheelProvider({ children }: { children: ReactNode }) {
       if (node.closest('input, textarea, select, option, [contenteditable="true"]')) return
       if (node.closest('#historyPanel')) return
       if (node.closest('#timerModePicker')) return
+      if (node.closest('#timekeepingModePicker')) return
       if (node.closest('#doneOverlay')) return
 
       const scrollEl = nearestVerticalScrollAncestor(node)
