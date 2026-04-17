@@ -207,11 +207,11 @@ function TimerModeSelect({
     setMenuBox({ top: r.bottom + 4, left: r.left, width: r.width })
   }, [])
 
+  /** Treat `open` as false while disabled — avoids setState inside an effect on `disabled`. */
+  const effectiveOpen = open && !disabled
+
   useLayoutEffect(() => {
-    if (!open) {
-      setMenuBox(null)
-      return
-    }
+    if (!effectiveOpen) return
     syncMenuPosition()
     const ro = new ResizeObserver(() => syncMenuPosition())
     if (triggerRef.current) ro.observe(triggerRef.current)
@@ -222,14 +222,10 @@ function TimerModeSelect({
       window.removeEventListener('scroll', syncMenuPosition, true)
       window.removeEventListener('resize', syncMenuPosition)
     }
-  }, [open, syncMenuPosition])
+  }, [effectiveOpen, syncMenuPosition])
 
   useEffect(() => {
-    if (disabled) setOpen(false)
-  }, [disabled])
-
-  useEffect(() => {
-    if (!open) return
+    if (!effectiveOpen) return
     const onDoc = (e: MouseEvent) => {
       const t = e.target as Node
       if (containerRef.current?.contains(t)) return
@@ -245,10 +241,10 @@ function TimerModeSelect({
       document.removeEventListener('mousedown', onDoc)
       window.removeEventListener('keydown', onKey)
     }
-  }, [open])
+  }, [effectiveOpen])
 
   const menu =
-    open && menuBox && !disabled ? (
+    effectiveOpen && menuBox ? (
       <ul
         ref={menuRef}
         role="listbox"
@@ -296,7 +292,7 @@ function TimerModeSelect({
         type="button"
         id="timerModeSelect"
         aria-haspopup="listbox"
-        aria-expanded={open && !disabled}
+        aria-expanded={effectiveOpen}
         disabled={disabled}
         title={
           disabled
@@ -316,7 +312,7 @@ function TimerModeSelect({
             ? 'cursor-not-allowed opacity-45 text-white/45 ring-1 ring-inset ring-white/[0.14]'
             : 'cursor-pointer',
           !disabled &&
-            (open
+            (effectiveOpen
               ? 'border-white/40 text-white'
               : 'text-white/80 hover:text-white'),
         )}
@@ -328,7 +324,7 @@ function TimerModeSelect({
             HD_ICON,
             'text-white/55 transition-transform duration-150 ease-out',
             /** Closed: point up; open: point down. */
-            !open && 'rotate-180',
+            !effectiveOpen && 'rotate-180',
           )}
           aria-hidden
           strokeWidth={2}
@@ -519,10 +515,14 @@ export default function HitsDifferentApp() {
     }
   }, [timekeepingMode])
 
-  const handleVibePick = useCallback((tickerId: string, v: Vibe, _duplicateIndex: number) => {
-    setSelectedVibe(v)
-    setVibeHighlight({ tickerId, duplicateIndex: 0 })
-  }, [])
+  const handleVibePick = useCallback(
+    (tickerId: string, v: Vibe, _duplicateIndex: number) => {
+      void _duplicateIndex
+      setSelectedVibe(v)
+      setVibeHighlight({ tickerId, duplicateIndex: 0 })
+    },
+    [],
+  )
 
   /** Option B highlight: snap to first clone when switching setup ↔ session. */
   useEffect(() => {
@@ -1137,16 +1137,15 @@ export default function HitsDifferentApp() {
           </div>
           <div className="pointer-events-none justify-self-center text-center" aria-hidden />
           <div className="flex min-w-0 justify-end justify-self-end">
-            <a
+            <button
+              type="button"
               id="hdSpotifyOpen"
-              href="https://open.spotify.com/"
-              target="_blank"
-              rel="noopener noreferrer"
+              aria-label="SPOTIFY (inactive)"
               className={cn(HD_TOP_BAR_BTN, HD_NAV_TEXT)}
             >
               <span className="block uppercase text-white">SPOTIFY</span>
               <ExternalLink className={cn(HD_ICON, 'self-end opacity-90')} strokeWidth={2.25} aria-hidden />
-            </a>
+            </button>
           </div>
         </div>
       </div>
