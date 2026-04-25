@@ -3,20 +3,13 @@
 /* Hits Different palette + animations (Tailwind v4 @theme) */
 @theme {
   --color-hd-gold: #c8a020;
+  /** Setup "arrow timer" accent — lime digits + `>>`. */
+  --color-hd-lime: #a3e635;
   --color-hd-bg: #0c0c0c;
   --color-hd-panel: #111111;
   --color-hd-break: #1a3040;
   --color-hd-done: #1a0a2a;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-}
-
-/* Task field: no focus/autofill “white flash” — match transparent field fill. */
-#taskInput:-webkit-autofill,
-#taskInput:-webkit-autofill:hover,
-#taskInput:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 1000px transparent inset;
-  -webkit-text-fill-color: #ffffff;
-  transition: background-color 99999s ease-out;
 }
 
 @layer base {
@@ -49,7 +42,7 @@
   }
 }
 
-/** Soft white–amber glow behind setup task field (HitsDifferentApp). */
+/** Soft white–amber glow behind setup timer area (HitsDifferentApp). */
 @keyframes hd-input-flare {
   0%,
   100% {

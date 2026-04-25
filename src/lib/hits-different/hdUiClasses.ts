@@ -73,7 +73,7 @@ export const HD_VIEWPORT_COPYRIGHT = cn(
 )
 
 /**
- * Desktop “golden radio” grid: two tracks only — major : minor = φ : 1 (≈ 61.8% : 38.2%).
+ * Desktop "golden radio" grid: two tracks only — major : minor = φ : 1 (≈ 61.8% : 38.2%).
  * Main task/timer lives in the wide band; the infinite vibe list sits in the narrow band (tuning strip).
  */
 export const HD_MAIN_GRID_COLS_CLASS = 'lg:grid-cols-[5.562fr_3.438fr]'
@@ -82,7 +82,7 @@ export const HD_MAIN_GRID_COLS_CLASS = 'lg:grid-cols-[5.562fr_3.438fr]'
  * Viewport / padding model (reference layout, same weights as the main grid):
  *
  * - **Major track (5.562)** → horizontal inset from viewport edges: `5.562vmin` scaled to `clamp(1rem, 5.562vmin, 4rem)`.
- *   Use for page frame, top bar, and anything that should line up with the left “content rail”.
+ *   Use for page frame, top bar, and anything that should line up with the left "content rail".
  * - **Minor track (3.438)** → vertical bottom inset / stage footroom: `3.438vmin` scaled to
  *   `clamp(0.75rem, 3.438vmin, 2.75rem)` so the big clock sits above the fold and safe-area.
  * - **Top breathing room** (lighter): `2.5vmin` cap for `lg:pt` so the header → title gap stays proportional.
@@ -92,7 +92,7 @@ export const HD_MAIN_GRID_COLS_CLASS = 'lg:grid-cols-[5.562fr_3.438fr]'
  * The grid columns remain `5.562fr | 3.438fr`; padding uses the *same numbers* so margins and columns feel unified.
  */
 export const HD_PAGE_FRAME =
-  'box-border max-lg:px-4 max-lg:pb-4 max-lg:pt-[max(8rem,calc(env(safe-area-inset-top)+5.5rem))] lg:px-[clamp(1rem,5.562vmin,4rem)] lg:pb-[clamp(0.75rem,3.438vmin,2.75rem)] lg:pt-[clamp(0.5rem,2.5vmin,1.75rem)]'
+  'box-border max-lg:px-4 max-lg:pb-[max(4.5rem,calc(env(safe-area-inset-bottom)+3.75rem))] max-lg:pt-[max(8rem,calc(env(safe-area-inset-top)+5.5rem))] lg:px-[clamp(1rem,5.562vmin,4rem)] lg:pb-[clamp(0.75rem,3.438vmin,2.75rem)] lg:pt-[clamp(0.5rem,2.5vmin,1.75rem)]'
 
 /** Match `#hdTopBar` horizontal inset to `HD_PAGE_FRAME` on large screens (no double margin). */
 export const HD_TOP_BAR_INSET_X =
@@ -111,9 +111,13 @@ export const HD_SETUP_TIMER_STAGE_PAD_BOTTOM =
 /** Vertical gap between setup title line and the input card (slightly looser than `HD_COLUMN_STACK_GAP`). */
 export const HD_SETUP_TITLE_TO_INPUT_GAP = 'gap-[clamp(1rem,2.75vmin,1.35rem)]'
 
-/** Minor column: horizontal vibe rail + “Deep focus” label. */
+/**
+ * Minor column: horizontal vibe rail (mobile) / vertical infinite ticker (desktop).
+ * - Mobile (max-lg): fixed strip pinned to the bottom of the viewport — infinite horizontal swipe.
+ * - Desktop (lg+): full-height flex column in the minor grid track — infinite vertical scroll.
+ */
 export const HD_TICKER_COLUMN_SHELL =
-  'relative flex min-h-[8rem] min-w-0 w-full shrink-0 flex-col overflow-hidden py-2 max-lg:px-3 sm:max-lg:px-4 lg:h-full lg:min-h-0 lg:py-3 lg:pl-5 lg:pr-2'
+  'relative flex min-w-0 w-full shrink-0 flex-col overflow-hidden max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:right-0 max-lg:z-[50] max-lg:h-14 max-lg:py-2 max-lg:px-3 sm:max-lg:px-4 max-lg:bg-[rgba(3,3,4,0.88)] max-lg:backdrop-blur-sm lg:h-full lg:min-h-0 lg:py-3 lg:pl-5 lg:pr-2'
 
 export function hdMainGridShellClass(
   mode: 'setup' | 'session',

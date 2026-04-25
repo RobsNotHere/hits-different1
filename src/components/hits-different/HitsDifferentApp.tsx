@@ -4,10 +4,9 @@ import { cn } from '@/lib/cn'
 import {
   ArrowRight,
   ChevronDown,
+  ChevronsRight,
   Download,
   ExternalLink,
-  List,
-  Loader2,
   Pause,
   PictureInPicture2,
   Play,
@@ -16,7 +15,6 @@ import {
   Watch,
   Volume2,
   VolumeX,
-  X,
 } from 'lucide-react'
 import {
   useCallback,
@@ -37,11 +35,9 @@ import {
 import { overlayCoverText } from '@/lib/hits-different/canvas'
 import { triggerBlobDownload } from '@/lib/hits-different/downloadBlob'
 import {
-  HISTORY_KEY,
   sessionDemoBreakSrc,
   sessionDemoFocusSrc,
   TIMER_MODE_PRESETS,
-  type HistoryEntry,
   type Vibe,
   VIBE_TRACKS,
 } from '@/lib/hits-different/data'
@@ -54,10 +50,7 @@ import {
   HD_LEFT_TRANSPORT_STACK,
   HD_NAV_TEXT,
   HD_PAGE_FRAME,
-  HD_SETUP_TITLE_TO_INPUT_GAP,
   HD_FONT_UI,
-  HD_TASK_INPUT_PLACEHOLDER,
-  HD_TASK_INPUT_VALUE,
   HD_TEXT_BODY,
   HD_TIMER_DISPLAY,
   HD_TOP_BAR_BTN,
@@ -468,7 +461,6 @@ export default function HitsDifferentApp() {
     tickerId: 'ticker1',
     duplicateIndex: 0,
   })
-  const [taskInput, setTaskInput] = useState('')
   const [taskText, setTaskText] = useState('')
   const [timekeepingMode, setTimekeepingMode] = useState<TimekeepingMode>(readStoredTimekeepingMode)
   const [focusMins, setFocusMins] = useState(25)
@@ -529,11 +521,8 @@ export default function HitsDifferentApp() {
     setVibeHighlight({ tickerId: 'ticker1', duplicateIndex: 0 })
   }, [view])
 
-  const [sessionHistory, setSessionHistory] = useState<HistoryEntry[]>([])
-  const [historyOpen, setHistoryOpen] = useState(false)
   const [toast, setToast] = useState({ msg: '', show: false })
   const [doneOpen, setDoneOpen] = useState(false)
-  const [taskStartPending, setTaskStartPending] = useState(false)
 
   const launchInProgressRef = useRef(false)
   const taskStartDelayTimeoutRef = useRef<number | null>(null)
@@ -593,15 +582,6 @@ export default function HitsDifferentApp() {
     viewRef.current = view
     doneOpenRef.current = doneOpen
   }, [view, doneOpen])
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(HISTORY_KEY)
-      if (raw) setSessionHistory(JSON.parse(raw) as HistoryEntry[])
-    } catch {
-      /* ignore */
-    }
-  }, [])
 
   const activeModeId = useMemo(() => {
     const m = TIMER_MODE_PRESETS.find(
@@ -690,30 +670,12 @@ export default function HitsDifferentApp() {
     }
   }, [])
 
-  const finish = useCallback((completedSessionNum: number) => {
+  const finish = useCallback((_completedSessionNum: number) => {
     clearTimer()
     timerAnchorRef.current = null
     tickSessionNumRef.current = 0
     setPaused(false)
     pausedRef.current = false
-    const entry: HistoryEntry = {
-      task: taskTextRef.current,
-      emoji: '🎵',
-      vibe: selectedVibeRef.current,
-      sessions: Math.ceil(completedSessionNum / 2),
-      duration: focusMinsRef.current,
-      date: new Date().toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      }),
-      completed: true,
-    }
-    setSessionHistory((prev) => {
-      const hist = [...prev, entry]
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(hist))
-      return hist
-    })
     setDoneOpen(true)
   }, [clearTimer])
 
@@ -871,28 +833,14 @@ export default function HitsDifferentApp() {
     togglePauseRef.current = togglePause
   }, [togglePause])
 
-  const launch = useCallback((options?: { skipTask?: boolean }) => {
+  const launchFromTimerControl = useCallback(() => {
     if (launchInProgressRef.current) return
-    const skipTask = options?.skipTask === true
-    const raw = taskInput.trim().toUpperCase()
-    const t = skipTask ? '' : raw
-    if (!skipTask && !t) return
     launchInProgressRef.current = true
-    setTaskStartPending(true)
-    if (skipTask) {
-      setTaskInput('')
-      taskTextRef.current = ''
-      setTaskText('')
-    } else {
-      taskTextRef.current = t
-      setTaskText(t)
-    }
+    taskTextRef.current = ''
+    setTaskText('')
 
     playUiNoti(TASK_START_NOTI_SRC, TASK_START_NOTI_VOL)
 
-    if (taskStartDelayTimeoutRef.current != null) {
-      window.clearTimeout(taskStartDelayTimeoutRef.current)
-    }
     taskStartDelayTimeoutRef.current = window.setTimeout(() => {
       taskStartDelayTimeoutRef.current = null
       setView('session')
@@ -903,7 +851,6 @@ export default function HitsDifferentApp() {
       )
       window.setTimeout(() => {
         launchInProgressRef.current = false
-        setTaskStartPending(false)
         if (timekeepingModeRef.current === 'stopwatch') {
           beginStopwatchRef.current()
         } else {
@@ -911,22 +858,13 @@ export default function HitsDifferentApp() {
         }
       }, 0)
     }, TASK_START_DELAY_MS)
-  }, [effectiveDemoVol, taskInput])
-
-  /** Pomodoro timer, no task line (session shows —). */
-  const launchJustStart = useCallback(() => {
-    if (taskStartPending || launchInProgressRef.current) return
-    timekeepingModeRef.current = 'timer'
-    setTimekeepingMode('timer')
-    launch({ skipTask: true })
-  }, [launch, taskStartPending])
+  }, [effectiveDemoVol])
 
   const restartSession = useCallback(() => {
     if (taskStartDelayTimeoutRef.current != null) {
       window.clearTimeout(taskStartDelayTimeoutRef.current)
       taskStartDelayTimeoutRef.current = null
     }
-    setTaskStartPending(false)
     clearTimer()
     timerAnchorRef.current = null
     tickSessionNumRef.current = 0
@@ -935,29 +873,12 @@ export default function HitsDifferentApp() {
     setPaused(false)
     pausedRef.current = false
     setView('setup')
-    setTaskInput('')
     taskTextRef.current = ''
     setTaskText('')
     launchInProgressRef.current = false
     setDoneOpen(false)
     setCurSession(1)
   }, [clearTimer])
-
-  const exportHistory = useCallback(() => {
-    if (!sessionHistory.length) {
-      showToast('No sessions to export')
-      return
-    }
-    const rows = ['Task,Date,Rounds,Vibe,Focus length (min),Completed']
-    sessionHistory.forEach((s) => {
-      rows.push(
-        `"${s.task}","${s.date}",${s.sessions},"${s.vibe}",${s.duration},${s.completed}`,
-      )
-    })
-    const blob = new Blob([rows.join('\n')], { type: 'text/csv' })
-    triggerBlobDownload(blob, 'hits-different-sessions.csv')
-    showToast('Session log exported')
-  }, [sessionHistory, showToast])
 
   const exportAlbumCover = useCallback(() => {
     const canvas = document.createElement('canvas')
@@ -982,14 +903,10 @@ export default function HitsDifferentApp() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement
-      if (t.tagName === 'INPUT') return
       if (e.key === ' ' && view === 'session') {
         e.preventDefault()
         togglePause()
       }
-      if (e.key === 'h' || e.key === 'H') setHistoryOpen((o) => !o)
-      if (e.key === 'Escape') setHistoryOpen(false)
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
@@ -1161,69 +1078,6 @@ export default function HitsDifferentApp() {
         {toast.msg}
       </div>
 
-      <div
-        id="historyPanel"
-        className={cn(
-          'fixed bottom-0 right-0 top-0 z-[220] flex w-full max-w-[min(100vw,340px)] flex-col border-l border-white/[0.1] bg-black/38 font-sans backdrop-blur-md transition-transform duration-[400ms] ease-[cubic-bezier(.4,0,.2,1)]',
-          historyOpen ? 'translate-x-0' : 'translate-x-full',
-        )}
-      >
-        <div className="flex items-center justify-between border-b border-white/[0.08] px-5 pb-3.5 pt-5">
-          <div
-            className={cn(HD_TEXT_BODY, 'font-normal uppercase tracking-[0.12em] text-white')}
-            id="hdSessionLogTitle"
-          >
-            SESSION LOG
-          </div>
-          <button
-            type="button"
-            className="cursor-pointer border-0 bg-transparent p-0.5 text-white/50 hover:text-white"
-            onClick={() => setHistoryOpen(false)}
-            aria-label="Close session log"
-          >
-            <X className={HD_ICON_LG} strokeWidth={2} aria-hidden />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto px-5 py-3.5 [scrollbar-color:rgba(255,255,255,0.1)_transparent] [scrollbar-width:thin]" id="histList">
-          {!sessionHistory.length ? (
-            <div
-              className={cn(HD_TEXT_BODY, 'mt-10 text-center tracking-wide text-white/25')}
-              id="histEmpty"
-            >
-              No sessions yet.
-              <br />
-              Drop the needle to begin.
-            </div>
-          ) : (
-            [...sessionHistory].reverse().map((s, i) => (
-              <div
-                key={i}
-                className="relative mb-2.5 rounded border border-white/[0.08] bg-white/[0.03] px-3.5 py-3"
-              >
-                <div className="absolute right-3.5 top-3 text-lg">{s.emoji}</div>
-                <div className={cn(HD_TEXT_BODY, 'mb-1 tracking-wide text-white')}>{s.task}</div>
-                <div className={cn(HD_TEXT_BODY, 'tracking-wide text-white/40')}>
-                  {s.date} · {s.sessions} rounds · {s.vibe} · {s.duration}m focus
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-        <div className="border-t border-white/[0.08] px-5 pb-3.5 pt-3">
-          <button
-            type="button"
-            className={cn(
-              'flex h-11 min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md border-0 bg-black/38 px-3 leading-none tracking-[0.1em] text-white/80 outline-none ring-1 ring-inset ring-white/[0.1] transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-white/25',
-              HD_FONT_UI,
-            )}
-            onClick={exportHistory}
-          >
-            <Download className={cn(HD_ICON, 'opacity-90')} strokeWidth={2.25} aria-hidden />
-            EXPORT SESSION LOG
-          </button>
-        </div>
-      </div>
-
       {/* Setup */}
       <div id="s1" className={hdMainGridShellClass('setup', view)}>
         <div
@@ -1232,7 +1086,7 @@ export default function HitsDifferentApp() {
         >
           <div className="relative z-[6] flex h-full min-h-0 flex-1 flex-col justify-center overflow-hidden">
             <div className={HD_STAGE_STACK}>
-              <div className={cn(HD_LEFT_STAGE_COLUMN, HD_SETUP_TITLE_TO_INPUT_GAP)}>
+              <div className={cn(HD_LEFT_STAGE_COLUMN, HD_COLUMN_STACK_GAP)}>
                 <h1
                   className={cn(HD_DISPLAY_TITLE, 'relative z-[2] w-full shrink-0 text-start')}
                   id="hdPageTitle"
@@ -1244,69 +1098,34 @@ export default function HitsDifferentApp() {
                     className="hd-input-flare pointer-events-none absolute left-1/2 top-[46%] z-0 h-[min(280px,48vmin)] w-[min(122%,26rem)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse_52%_46%_at_50%_48%,rgba(255,252,240,0.5)_0%,rgba(255,234,190,0.26)_40%,rgba(245,200,95,0.12)_58%,transparent_76%)] blur-3xl"
                     aria-hidden
                   />
-                  <div className="relative z-[1] w-full overflow-hidden rounded-xl border border-[#CBCBCB] bg-transparent">
-                  {taskStartPending ? (
-                    <div
-                      className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-black/45 px-4 backdrop-blur-[2px]"
-                      aria-live="polite"
-                      aria-busy="true"
-                    >
-                      <Loader2
-                        className={cn(HD_ICON_LG, 'animate-spin text-white/70')}
-                        strokeWidth={2}
-                        aria-hidden
-                      />
-                      <span className={cn(HD_TEXT_BODY, 'tracking-[0.1em] text-white/75')}>
-                        STARTING SESSION…
-                      </span>
-                    </div>
-                  ) : null}
-                  <input
-                    className={cn(
-                      'box-border w-full min-h-[5.25rem] min-w-0 border-0 bg-transparent px-6 py-5 text-start outline-none ring-0 ring-offset-0 focus:bg-transparent focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 active:bg-transparent',
-                      HD_TASK_INPUT_VALUE,
-                      HD_TASK_INPUT_PLACEHOLDER,
-                      taskStartPending && 'pointer-events-none opacity-60',
-                    )}
-                    id="taskInput"
-                    name="hd-task"
-                    type="text"
-                    autoComplete="off"
-                    aria-label="Enter your task — press Enter to start"
-                    placeholder="WHAT ARE YOU WORKING ON?"
-                    maxLength={40}
-                    value={taskInput}
-                    readOnly={taskStartPending}
-                    onChange={(e) => setTaskInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (taskStartPending) return
-                      if (e.key !== 'Enter') return
-                      e.preventDefault()
-                      launch()
-                    }}
-                  />
-                  <div
-                    className={cn(
-                      'flex min-h-[3.25rem] items-center justify-between gap-2 px-3 py-2.5',
-                      taskStartPending && 'pointer-events-none opacity-60',
-                    )}
-                  >
+                  <div className="relative z-[1] w-full">
                     <button
                       type="button"
-                      id="hdSessionLogOpen"
-                      className={cn(
-                        HD_SETUP_ICON_BTN,
-                        'text-white/80',
-                        historyOpen && 'text-white',
-                      )}
-                      title={historyOpen ? 'Close session log' : 'Session log'}
-                      aria-label={historyOpen ? 'Close session log' : 'Open session log'}
-                      aria-expanded={historyOpen}
-                      onClick={() => setHistoryOpen((o) => !o)}
+                      id="hdTimerStart"
+                      className="group box-border flex w-full min-w-0 cursor-pointer items-end gap-[clamp(0.25rem,min(2cqw,0.65rem),0.85rem)] border-0 bg-transparent px-0 py-0 outline-none"
+                      aria-label={timekeepingMode === 'stopwatch' ? 'Start stopwatch' : 'Start Pomodoro timer'}
+                      onClick={launchFromTimerControl}
                     >
-                      <List className={HD_ICON_LG} strokeWidth={2} aria-hidden />
+                      <span
+                        className={cn(
+                          HD_TIMER_DISPLAY,
+                          'inline-block w-auto max-w-none shrink-0',
+                          'text-[color:var(--color-hd-lime)] transition-all duration-200',
+                          'group-hover:translate-x-0.5 group-hover:drop-shadow-[0_0_28px_rgba(163,230,53,0.45)]',
+                          'group-focus-visible:translate-x-0.5 group-focus-visible:drop-shadow-[0_0_28px_rgba(163,230,53,0.45)]',
+                        )}
+                      >
+                        {timekeepingMode === 'stopwatch'
+                          ? '00:00'
+                          : `${String(focusMins).padStart(2, '0')}:00`}
+                      </span>
+                      <ChevronsRight
+                        className="mb-[0.06em] h-[clamp(1.4rem,min(9.5cqw,11.5vmin),4.75rem)] w-[clamp(1.75rem,min(11cqw,13vmin),5.25rem)] shrink-0 text-[color:var(--color-hd-lime)] transition-all duration-200 group-hover:translate-x-2 group-hover:drop-shadow-[0_0_20px_rgba(163,230,53,0.4)] group-focus-visible:translate-x-2 group-focus-visible:drop-shadow-[0_0_20px_rgba(163,230,53,0.4)]"
+                        strokeWidth={3}
+                        aria-hidden
+                      />
                     </button>
-                    <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+                    <div className="mt-2 flex min-w-0 items-center justify-start gap-2">
                       <TimerModeSelect
                         modeId={activeModeId}
                         onSelectMode={applyTimerMode}
@@ -1318,21 +1137,6 @@ export default function HitsDifferentApp() {
                       />
                     </div>
                   </div>
-                </div>
-                  <button
-                    type="button"
-                    className={cn(
-                      'mt-4 flex w-full cursor-pointer items-center justify-start gap-2 border-0 bg-transparent px-2 py-2 text-start tracking-[0.12em] text-white/75 outline-none transition-colors hover:text-white focus-visible:underline focus-visible:underline-offset-4 disabled:pointer-events-none disabled:opacity-50',
-                      HD_FONT_UI,
-                      'text-[clamp(1.125rem,3.8cqw,1.5rem)]',
-                    )}
-                    aria-label="Start session without a task"
-                    disabled={taskStartPending}
-                    onClick={launchJustStart}
-                  >
-                    Just start bruh
-                    <ArrowRight className="h-[1.1em] w-[1.1em] shrink-0 opacity-90" strokeWidth={2} aria-hidden />
-                  </button>
                 </div>
               </div>
             </div>
@@ -1357,9 +1161,6 @@ export default function HitsDifferentApp() {
           <div className="relative z-[6] flex min-h-0 w-full min-w-0 flex-1 flex-col justify-center overflow-hidden">
             <div className={HD_STAGE_STACK}>
               <div className={cn(HD_LEFT_STAGE_COLUMN, HD_COLUMN_STACK_GAP)}>
-                <div className={HD_DISPLAY_TITLE} id="s2Task">
-                  {taskText || '—'}
-                </div>
                 {!doneOpen ? (
                   <div className="w-full text-start" aria-live="polite" aria-atomic="true">
                     <span
