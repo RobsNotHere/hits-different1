@@ -461,7 +461,6 @@ export default function HitsDifferentApp() {
     tickerId: 'ticker1',
     duplicateIndex: 0,
   })
-  const [taskText, setTaskText] = useState('')
   const [timekeepingMode, setTimekeepingMode] = useState<TimekeepingMode>(readStoredTimekeepingMode)
   const [focusMins, setFocusMins] = useState(25)
   const [breakMins, setBreakMins] = useState(5)
@@ -484,15 +483,11 @@ export default function HitsDifferentApp() {
   const timerTickRef = useRef<() => void>(() => {})
   const [hiresTick, setHiresTick] = useState(0)
 
-  const taskTextRef = useRef('')
-  const selectedVibeRef = useRef('LO-FI')
   const focusMinsRef = useRef(25)
 
   useEffect(() => {
-    taskTextRef.current = taskText
-    selectedVibeRef.current = selectedVibe
     focusMinsRef.current = focusMins
-  }, [taskText, selectedVibe, focusMins])
+  }, [focusMins])
 
   useEffect(() => {
     totalSessionsRef.current = totalSessions
@@ -836,8 +831,6 @@ export default function HitsDifferentApp() {
   const launchFromTimerControl = useCallback(() => {
     if (launchInProgressRef.current) return
     launchInProgressRef.current = true
-    taskTextRef.current = ''
-    setTaskText('')
 
     playUiNoti(TASK_START_NOTI_SRC, TASK_START_NOTI_VOL)
 
@@ -873,8 +866,6 @@ export default function HitsDifferentApp() {
     setPaused(false)
     pausedRef.current = false
     setView('setup')
-    taskTextRef.current = ''
-    setTaskText('')
     launchInProgressRef.current = false
     setDoneOpen(false)
     setCurSession(1)
@@ -893,13 +884,13 @@ export default function HitsDifferentApp() {
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText('🎵', 500, 500)
-    overlayCoverText(ctx, taskText, selectedVibe)
+    overlayCoverText(ctx, '', selectedVibe)
     canvas.toBlob((blob) => {
       if (!blob) return
       triggerBlobDownload(blob, 'hits-different-cover.png')
       showToast('Album cover saved')
     })
-  }, [selectedVibe, showToast, taskText])
+  }, [selectedVibe, showToast])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

@@ -227,6 +227,13 @@ function WheelInfiniteVibeList({
   const ensureRafRef = useRef<() => void>(() => {})
 
   const wheelRegistry = useContext(TickerWheelRegistryContext)
+  const pickBase = useCallback(
+    (v: Vibe, _duplicateIndex: number) => {
+      void _duplicateIndex
+      onPickVibe(v, 0)
+    },
+    [onPickVibe],
+  )
 
   useLayoutEffect(() => {
     const seg = segmentRef.current
@@ -352,7 +359,7 @@ function WheelInfiniteVibeList({
               key={`${id}-a-${v}`}
               vibe={v}
               visuallySelected={isVibeVisuallySelected(v, 0)}
-              onPickVibe={onPickVibe}
+              onPickVibe={pickBase}
               duplicateIndex={0}
             />
           ))}
@@ -363,7 +370,7 @@ function WheelInfiniteVibeList({
               key={`${id}-b-${v}`}
               vibe={v}
               visuallySelected={isVibeVisuallySelected(v, 1)}
-              onPickVibe={onPickVibe}
+              onPickVibe={pickBase}
               duplicateIndex={1}
             />
           ))}
@@ -374,7 +381,7 @@ function WheelInfiniteVibeList({
               key={`${id}-c-${v}`}
               vibe={v}
               visuallySelected={isVibeVisuallySelected(v, 2)}
-              onPickVibe={onPickVibe}
+              onPickVibe={pickBase}
               duplicateIndex={2}
             />
           ))}
@@ -385,7 +392,7 @@ function WheelInfiniteVibeList({
               key={`${id}-d-${v}`}
               vibe={v}
               visuallySelected={isVibeVisuallySelected(v, 3)}
-              onPickVibe={onPickVibe}
+              onPickVibe={pickBase}
               duplicateIndex={3}
             />
           ))}
@@ -420,6 +427,13 @@ function HorizontalInfiniteVibeList({
   const lastTouchXRef = useRef<number | null>(null)
   const rafRef = useRef<number | null>(null)
   const isDraggingRef = useRef(false)
+  const pickBase = useCallback(
+    (v: Vibe, _duplicateIndex: number) => {
+      void _duplicateIndex
+      onPickVibe(v, 0)
+    },
+    [onPickVibe],
+  )
 
   /** One loop = first segment width + column-gap before duplicate. */
   function scrollPeriodX(seg: HTMLElement, track: HTMLElement): number {
@@ -542,7 +556,7 @@ function HorizontalInfiniteVibeList({
               key={`${id}-a-${v}`}
               vibe={v}
               visuallySelected={isVibeVisuallySelected(v, 0)}
-              onPickVibe={onPickVibe}
+              onPickVibe={pickBase}
               duplicateIndex={0}
             />
           ))}
@@ -555,7 +569,7 @@ function HorizontalInfiniteVibeList({
                 key={`${id}-${String.fromCharCode(97 + idx)}-${v}`}
                 vibe={v}
                 visuallySelected={isVibeVisuallySelected(v, idx)}
-                onPickVibe={onPickVibe}
+                onPickVibe={pickBase}
                 duplicateIndex={idx}
               />
             ))}
